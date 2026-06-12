@@ -1,29 +1,21 @@
-import "./App.css";
-
-import Header from "./components/Header";
-import Hero from "./components/Hero";
-import Features from "./components/Features";
-import HowItWorks from "./components/HowItWorks";
-import Pricing from "./components/Pricing";
-import Demo from "./components/Demo";
-import Footer from "./components/Footer";
-
-function App() {
+function Hero() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <Header />
+    <section className="pt-40 pb-28 px-6 bg-gradient-to-r from-blue-950 via-blue-900 to-emerald-500 text-white">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-5xl md:text-7xl font-bold max-w-4xl">
+          Sua recepcionista virtual inteligente
+        </h1>
 
-      <main>
-        <Hero />
-        <Features />
-        <HowItWorks />
-        <Pricing />
-        <Demo />
-      </main>
+        <p className="text-xl mt-8 max-w-3xl">
+          Automatize atendimentos, agendamentos e confirmações pelo WhatsApp usando Inteligência Artificial.
+        </p>
 
-      <Footer />
-    </div>
+        <button className="mt-10 bg-emerald-500 hover:bg-emerald-600 px-8 py-4 rounded-xl font-bold">
+          Solicitar Demonstração
+        </button>
+      </div>
+    </section>
   );
 }
 
-export default App;
+export default Hero;
