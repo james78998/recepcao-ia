@@ -1,27 +1,16 @@
-function LeadDetails() {
-  return (
-    <div className="min-h-screen bg-slate-100 flex">
-      <aside className="w-72 bg-blue-950 text-white p-6 hidden md:block">
-        <h1 className="text-2xl font-bold mb-10">Recepção IA</h1>
+import React, { useState } from "react";
+import Layout from "../components/Layout";
 
-        <nav className="space-y-4">
-          <a className="block hover:bg-blue-900 p-3 rounded-xl" href="/dashboard">
-            Dashboard
-          </a>
-          <a className="block bg-blue-900 p-3 rounded-xl" href="/crm">
-            CRM
-          </a>
-          <a className="block hover:bg-blue-900 p-3 rounded-xl" href="#">
-            WhatsApp
-          </a>
-          <a className="block hover:bg-blue-900 p-3 rounded-xl" href="#">
-            Agenda
-          </a>
-          <a className="block hover:bg-blue-900 p-3 rounded-xl" href="#">
-            Configurações
-          </a>
-        </nav>
-      </aside>
+function LeadDetails() {
+  const [showToast, setShowToast] = useState(false);
+
+  return (
+    <Layout active="crm">
+      {showToast && (
+        <div className="fixed top-5 right-5 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50">
+          Lead movido para demonstração!
+        </div>
+      )}
 
       <main className="flex-1 p-8">
         <a href="/crm" className="text-blue-900 font-bold">
@@ -29,9 +18,7 @@ function LeadDetails() {
         </a>
 
         <div className="mt-6 mb-8">
-          <h2 className="text-4xl font-bold text-blue-950">
-            João Silva
-          </h2>
+          <h2 className="text-4xl font-bold text-blue-950">João Silva</h2>
           <p className="text-slate-600 mt-2">
             Lead captado automaticamente pela Recepção IA.
           </p>
@@ -52,19 +39,24 @@ function LeadDetails() {
               <div className="bg-green-100 p-4 rounded-xl">
                 <p className="font-bold">Recepção IA - 10:31</p>
                 <p>
-                  Olá! Será um prazer ajudar. Qual é o nome da sua empresa e quantos atendimentos recebe por dia?
+                  Olá! Será um prazer ajudar. Qual é o nome da sua empresa e
+                  quantos atendimentos recebe por dia?
                 </p>
               </div>
 
               <div className="bg-slate-100 p-4 rounded-xl">
                 <p className="font-bold">Cliente - 10:35</p>
-                <p>Minha empresa é a Clínica Sorriso e recebemos cerca de 30 mensagens por dia.</p>
+                <p>
+                  Minha empresa é a Clínica Sorriso e recebemos cerca de 30
+                  mensagens por dia.
+                </p>
               </div>
 
               <div className="bg-green-100 p-4 rounded-xl">
                 <p className="font-bold">Recepção IA - 10:36</p>
                 <p>
-                  Perfeito! Posso agendar uma demonstração para mostrar como a IA pode atender e organizar seus leads?
+                  Perfeito! Posso agendar uma demonstração para mostrar como a IA
+                  pode atender e organizar seus leads?
                 </p>
               </div>
             </div>
@@ -89,7 +81,10 @@ function LeadDetails() {
                 Enviar WhatsApp
               </button>
 
-              <button className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold">
+              <button
+                onClick={() => setShowToast(true)}
+                className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold"
+              >
                 Mover para Demonstração
               </button>
 
@@ -100,7 +95,7 @@ function LeadDetails() {
           </aside>
         </div>
       </main>
-    </div>
+    </Layout>
   );
 }
 
