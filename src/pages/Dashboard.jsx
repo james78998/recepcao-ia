@@ -1,6 +1,7 @@
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
 import StatCard from "../components/StatCard";
+import { leads } from "../data/leads";
 
 function Dashboard() {
   return (
