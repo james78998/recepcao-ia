@@ -1,5 +1,5 @@
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import CRM from "./pages/CRM";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -16,7 +16,7 @@ import RecuperarSenha from "./pages/RecuperarSenha";
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -32,7 +32,8 @@ function App() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
+
   );
 }
 

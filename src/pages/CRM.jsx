@@ -1,6 +1,7 @@
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
 import StatCard from "../components/StatCard";
+import { Link } from "react-router-dom";
 
 function CRM() {
   const leads = [
@@ -77,12 +78,12 @@ function CRM() {
                     </td>
                     <td className="py-3">
                       <button className="bg-blue-900 text-white px-4 py-2 rounded-lg mr-2">
-                        <a
-  href={`/lead/${index + 1}`}
-  className="bg-blue-900 text-white px-4 py-2 rounded-lg mr-2"
->
-  Ver
-</a>
+                        <Link
+                          to={`/lead/${index + 1}`}
+                          className="bg-blue-900 text-white px-4 py-2 rounded-lg mr-2"
+                        >
+                          Ver
+                        </Link>
                       </button>
                       <button className="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg">
                         Editar

@@ -1,21 +1,23 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import Modal from "../components/Modal";
 import Layout from "../components/Layout";
+import { Link } from "react-router-dom";
 
 function LeadDetails() {
   const [showToast, setShowToast] = useState(false);
-
   return (
     <Layout active="crm">
       {showToast && (
         <div className="fixed top-5 right-5 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50">
           Lead movido para demonstração!
         </div>
+        
       )}
-
+      
       <main className="flex-1 p-8">
-        <a href="/crm" className="text-blue-900 font-bold">
+        <Link to="/crm" className="text-blue-900 font-bold">
           ← Voltar para CRM
-        </a>
+        </Link>
 
         <div className="mt-6 mb-8">
           <h2 className="text-4xl font-bold text-blue-950">João Silva</h2>
@@ -80,7 +82,7 @@ function LeadDetails() {
               <button className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold">
                 Enviar WhatsApp
               </button>
-
+              
               <button
                 onClick={() => setShowToast(true)}
                 className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold"
@@ -91,6 +93,12 @@ function LeadDetails() {
               <button className="w-full bg-slate-200 text-slate-800 py-3 rounded-xl font-bold">
                 Editar Lead
               </button>
+              <button
+  onClick={() => setShowModal(true)}
+  className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold"
+>
+  Excluir Lead
+</button>
             </div>
           </aside>
         </div>
