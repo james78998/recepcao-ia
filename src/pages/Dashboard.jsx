@@ -2,6 +2,7 @@ import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
 import StatCard from "../components/StatCard";
 import { leads } from "../data/leads";
+import { Link } from "react-router-dom";
 
 function Dashboard() {
   return (

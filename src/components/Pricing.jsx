@@ -34,7 +34,7 @@ function Pricing() {
   ];
 
   return (
-    <section id="planos" className="py-24 px-6 bg-white">
+    <><section id="planos" className="..."></section><section id="planos" className="py-24 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-4xl font-bold text-center text-blue-950 mb-14">
           Planos para sua empresa
@@ -44,11 +44,9 @@ function Pricing() {
           {plans.map((plan, index) => (
             <div
               key={index}
-              className={`rounded-2xl p-8 border shadow-sm ${
-                index === 1
+              className={`rounded-2xl p-8 border shadow-sm ${index === 1
                   ? "border-green-500 bg-green-50 scale-105"
-                  : "border-slate-200 bg-slate-50"
-              }`}
+                  : "border-slate-200 bg-slate-50"}`}
             >
               <h3 className="text-2xl font-bold text-blue-900 mb-3">
                 {plan.name}
@@ -77,7 +75,7 @@ function Pricing() {
           ))}
         </div>
       </div>
-    </section>
+    </section></>
   );
 }
 

@@ -1,6 +1,6 @@
 function Footer() {
   return (
-    <footer
+    <><footer id="contato" className="..."></footer><footer
       id="contato"
       className="bg-slate-950 text-white py-16 px-6"
     >
@@ -42,7 +42,7 @@ function Footer() {
         </p>
 
       </div>
-    </footer>
+    </footer></>
   );
 }
 

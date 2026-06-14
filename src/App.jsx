@@ -1,5 +1,6 @@
 import "./App.css";
 import { HashRouter, Routes, Route } from "react-router-dom";
+
 import CRM from "./pages/CRM";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -33,7 +34,6 @@ function App() {
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
       </Routes>
     </HashRouter>
-
   );
 }
 

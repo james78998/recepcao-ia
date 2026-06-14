@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function RecuperarSenha() {
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
@@ -16,13 +18,16 @@ function RecuperarSenha() {
           placeholder="Seu e-mail"
         />
 
-        <button className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold">
+        <button className="w-full bg-blue-900 hover:bg-blue-800 transition-colors text-white py-3 rounded-xl font-bold">
           Enviar código
         </button>
 
-        <a href="/login" className="block text-center mt-6 text-blue-900 font-bold">
+        <Link
+          to="/login"
+          className="block text-center mt-6 text-blue-900 font-bold hover:underline"
+        >
           Voltar ao login
-        </a>
+        </Link>
       </div>
     </div>
   );

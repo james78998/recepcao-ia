@@ -1,6 +1,6 @@
 function Demo() {
   return (
-    <section className="py-24 px-6 bg-slate-900 text-white">
+    <><section id="demonstracao" className="..."></section><section className="py-24 px-6 bg-slate-900 text-white">
       <div className="max-w-5xl mx-auto text-center">
         <h2 className="text-4xl font-bold mb-6">
           Veja a Recepção IA em ação
@@ -30,7 +30,7 @@ function Demo() {
           Solicitar Demonstração
         </button>
       </div>
-    </section>
+    </section></>
   );
 }
 

@@ -7,7 +7,7 @@ function Features() {
   ];
 
   return (
-    <section id="recursos" className="py-24 px-6 bg-white">
+    <><section id="recursos" className="..."></section><section id="recursos" className="py-24 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-4xl md:text-5xl font-bold text-center text-blue-950 mb-14">
           O que a Recepção IA faz por sua empresa?
@@ -22,7 +22,7 @@ function Features() {
           ))}
         </div>
       </div>
-    </section>
+    </section></>
   );
 }
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+
 import Pagination from "../components/Pagination";
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
@@ -12,19 +13,30 @@ import { leads } from "../data/leads";
 function CRM() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
   const leadsPerPage = 5;
 
-    <Pagination
-  currentPage={currentPage}
-  totalPages={5}
-  onPageChange={setCurrentPage}
-/>
+  function getStatusColor(status) {
+    if (status === "Novo lead") return "green";
+    if (status === "Demonstração") return "blue";
+    if (status === "Proposta") return "orange";
+    if (status === "Cliente ativo") return "purple";
+    return "gray";
+  }
 
   const filteredLeads = leads.filter(
     (lead) =>
       lead.nome.toLowerCase().includes(search.toLowerCase()) ||
       lead.empresa.toLowerCase().includes(search.toLowerCase()) ||
       lead.segmento.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredLeads.length / leadsPerPage);
+
+  const startIndex = (currentPage - 1) * leadsPerPage;
+  const currentLeads = filteredLeads.slice(
+    startIndex,
+    startIndex + leadsPerPage
   );
 
   return (
@@ -51,7 +63,10 @@ function CRM() {
         <SearchBar
           placeholder="Pesquisar lead, empresa ou segmento..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
         />
       </div>
 
@@ -59,30 +74,20 @@ function CRM() {
         title="Lista de leads"
         headers={["Nome", "WhatsApp", "Empresa", "Segmento", "Status", "Ações"]}
       >
-        {filteredLeads.map((lead, index) => (
+        {currentLeads.map((lead, index) => (
           <tr key={index} className="border-b">
             <td className="py-3">{lead.nome}</td>
             <td className="py-3">{lead.whatsapp}</td>
             <td className="py-3">{lead.empresa}</td>
             <td className="py-3">{lead.segmento}</td>
             <td className="py-3">
-              <Badge
-                color={
-                  lead.status === "Novo lead"
-                    ? "green"
-                    : lead.status === "Demonstração"
-                    ? "blue"
-                    : lead.status === "Proposta"
-                    ? "orange"
-                    : "gray"
-                }
-              >
+              <Badge color={getStatusColor(lead.status)}>
                 {lead.status}
               </Badge>
             </td>
             <td className="py-3">
               <Link
-                to={`/lead/${index + 1}`}
+                to={`/lead/${startIndex + index + 1}`}
                 className="bg-blue-900 text-white px-4 py-2 rounded-lg mr-2 inline-block"
               >
                 Ver
@@ -95,7 +100,7 @@ function CRM() {
           </tr>
         ))}
 
-        {filteredLeads.length === 0 && (
+        {currentLeads.length === 0 && (
           <tr>
             <td colSpan="6" className="py-6 text-center text-slate-500">
               Nenhum lead encontrado.
@@ -103,6 +108,14 @@ function CRM() {
           </tr>
         )}
       </DataTable>
+
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </Layout>
   );
 }

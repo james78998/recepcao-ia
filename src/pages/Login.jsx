@@ -1,4 +1,7 @@
+import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 function Login() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
       <div className="bg-white rounded-3xl shadow-xl w-full max-w-md p-8">
@@ -11,22 +14,43 @@ function Login() {
         </p>
 
         <div className="space-y-4">
-          <input className="w-full border p-3 rounded-xl" type="email" placeholder="E-mail" />
-          <input className="w-full border p-3 rounded-xl" type="password" placeholder="Senha" />
+          <input
+            className="w-full border p-3 rounded-xl"
+            type="email"
+            placeholder="E-mail"
+          />
 
-          <button className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold">
-            Entrar
-          </button>
+          <input
+            className="w-full border p-3 rounded-xl"
+            type="password"
+            placeholder="Senha"
+          />
+
+          <button
+  onClick={() => {
+    // TODO: substituir por autenticação JWT quando o backend estiver pronto
+    navigate("/dashboard");
+  }}
+  className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold"
+>
+  Entrar
+</button>
         </div>
 
         <div className="flex justify-between mt-6 text-sm">
-          <a href="/recuperar-senha" className="text-blue-900 font-bold">
+          <Link
+            to="/recuperar-senha"
+            className="text-blue-900 font-bold hover:underline"
+          >
             Esqueci minha senha
-          </a>
+          </Link>
 
-          <a href="/cadastro" className="text-green-600 font-bold">
+          <Link
+            to="/cadastro"
+            className="text-green-600 font-bold hover:underline"
+          >
             Criar conta
-          </a>
+          </Link>
         </div>
       </div>
     </div>
