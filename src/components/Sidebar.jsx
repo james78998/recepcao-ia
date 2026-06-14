@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Sidebar({ active }) {
   const menu = [
     { name: "Dashboard", path: "/dashboard", key: "dashboard" },
@@ -18,17 +20,17 @@ function Sidebar({ active }) {
 
       <nav className="space-y-4">
         {menu.map((item) => (
-          <a
+          <Link
             key={item.key}
-            href={item.path}
-            className={`block p-3 rounded-xl ${
+            to={item.path}
+            className={`block p-3 rounded-xl transition-colors ${
               active === item.key
                 ? "bg-blue-900"
                 : "hover:bg-blue-900"
             }`}
           >
             {item.name}
-          </a>
+          </Link>
         ))}
       </nav>
     </aside>
