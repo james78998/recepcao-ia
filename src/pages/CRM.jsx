@@ -2,6 +2,7 @@ import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
 import StatCard from "../components/StatCard";
 import { Link } from "react-router-dom";
+import Badge from "../components/Badge";
 
 function CRM() {
   const leads = [
@@ -73,9 +74,21 @@ function CRM() {
                     <td className="py-3">{lead.whatsapp}</td>
                     <td className="py-3">{lead.empresa}</td>
                     <td className="py-3">{lead.segmento}</td>
-                    <td className="py-3 font-bold text-blue-700">
-                      {lead.status}
-                    </td>
+                    <td className="py-3">
+  <Badge
+    color={
+      lead.status === "Novo lead"
+        ? "green"
+        : lead.status === "Demonstração"
+        ? "blue"
+        : lead.status === "Proposta"
+        ? "orange"
+        : "gray"
+    }
+  >
+    {lead.status}
+  </Badge>
+</td>
                     <td className="py-3">
                       <button className="bg-blue-900 text-white px-4 py-2 rounded-lg mr-2">
                         <Link
