@@ -14,11 +14,15 @@ import Financeiro from "./pages/Financeiro";
 import Perfil from "./pages/Perfil";
 import Cadastro from "./pages/Cadastro";
 import RecuperarSenha from "./pages/RecuperarSenha";
+import NovoLead from "./pages/NovoLead";
+import EditarLead from "./pages/EditarLead";
 
 function App() {
   return (
     <HashRouter>
       <Routes>
+        <Route path="/novo-lead" element={<NovoLead />} />
+        <Route path="/editar-lead/:id" element={<EditarLead />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />

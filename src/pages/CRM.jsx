@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-
 import Pagination from "../components/Pagination";
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
@@ -47,9 +46,12 @@ function CRM() {
           subtitle="Gerencie leads, oportunidades e clientes."
         />
 
-        <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold">
-          Novo Lead
-        </button>
+        <Link
+  to="/novo-lead"
+  className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold"
+>
+  Novo Lead
+</Link>
       </div>
 
       <div className="grid md:grid-cols-4 gap-6 mb-10">
@@ -93,9 +95,12 @@ function CRM() {
                 Ver
               </Link>
 
-              <button className="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg">
-                Editar
-              </button>
+              <Link
+  to={`/editar-lead/${lead.id}`}
+  className="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg"
+>
+  Editar
+</Link>
             </td>
           </tr>
         ))}
