@@ -37,21 +37,42 @@ function Dashboard() {
 
             <tbody>
               <tr className="border-b">
-                <td className="py-3">João Silva</td>
+                <td className="py-3">
+  <Link
+    to="/lead/1"
+    className="text-blue-900 font-bold hover:underline"
+  >
+    João Silva
+  </Link>
+</td>
                 <td className="py-3">Clínica Sorriso</td>
                 <td className="py-3">Odontologia</td>
                 <td className="py-3 text-green-600 font-bold">Novo lead</td>
               </tr>
 
               <tr className="border-b">
-                <td className="py-3">Maria Santos</td>
+                <td className="py-3">
+  <Link
+    to="/lead/2"
+    className="text-blue-900 font-bold hover:underline"
+  >
+    Maria Santos
+  </Link>
+</td>
                 <td className="py-3">Bella Estética</td>
                 <td className="py-3">Estética</td>
                 <td className="py-3 text-blue-600 font-bold">Demonstração</td>
               </tr>
 
               <tr>
-                <td className="py-3">Carlos Lima</td>
+                <td className="py-3">
+  <Link
+    to="/lead/3"
+    className="text-blue-900 font-bold hover:underline"
+  >
+    Carlos Lima
+  </Link>
+</td>
                 <td className="py-3">Lima Advocacia</td>
                 <td className="py-3">Advocacia</td>
                 <td className="py-3 text-orange-600 font-bold">Proposta</td>

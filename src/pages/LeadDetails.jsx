@@ -1,9 +1,10 @@
 import { useState } from "react";
 import Modal from "../components/Modal";
 import Layout from "../components/Layout";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 function LeadDetails() {
+  const { id } = useParams();
   const [showToast, setShowToast] = useState(false);
   return (
     <Layout active="crm">
@@ -90,9 +91,12 @@ function LeadDetails() {
                 Mover para Demonstração
               </button>
 
-              <button className="w-full bg-slate-200 text-slate-800 py-3 rounded-xl font-bold">
-                Editar Lead
-              </button>
+              <Link
+  to={`/editarlead/${id}`}
+  className="w-full block text-center bg-blue-900 hover:bg-blue-800 text-white py-4 rounded-xl font-bold transition"
+>
+  Editar Lead
+</Link>
               <button
   onClick={() => setShowModal(true)}
   className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold"

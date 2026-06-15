@@ -71,24 +71,24 @@ function EditarLead() {
           </select>
         </div>
 
-        <div className="flex gap-4 mt-8">
-          <button
-            onClick={() => {
-              alert("Lead atualizado com sucesso!");
-              navigate("/crm");
-            }}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold"
-          >
-            Salvar alterações
-          </button>
+        <div className="flex flex-col md:flex-row gap-4 mt-8">
+  <button
+    onClick={() => {
+      alert("Lead atualizado com sucesso!");
+      navigate("/crm");
+    }}
+    className="w-full md:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold transition"
+  >
+    Salvar alterações
+  </button>
 
-          <button
-            onClick={() => navigate("/crm")}
-            className="bg-slate-200 hover:bg-slate-300 text-slate-800 px-8 py-3 rounded-xl font-bold"
-          >
-            Cancelar
-          </button>
-        </div>
+  <button
+    onClick={() => navigate("/crm")}
+    className="w-full md:w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 px-8 py-4 rounded-xl font-bold transition"
+  >
+    Cancelar
+  </button>
+</div>
       </div>
     </Layout>
   );

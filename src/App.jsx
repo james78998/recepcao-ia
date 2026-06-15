@@ -21,8 +21,8 @@ function App() {
   return (
     <HashRouter>
       <Routes>
+        <Route path="/editarlead/:id" element={<EditarLead />} />
         <Route path="/novo-lead" element={<NovoLead />} />
-        <Route path="/editar-lead/:id" element={<EditarLead />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
