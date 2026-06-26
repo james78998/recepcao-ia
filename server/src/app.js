@@ -10,6 +10,10 @@ app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.json({ name: 'Recepção IA API', status: 'online' });
+});
+
 app.use('/api', router);
 
 app.use(errorHandler);
