@@ -22,4 +22,21 @@ async function getRecentByConversation(conversationId, limit = 10) {
   return messages.reverse(); // ordem cronológica (asc) para o contexto da IA
 }
 
-module.exports = { existsByWamid, create, getRecentByConversation };
+async function findByConversation(conversationId, tenantId) {
+  return prisma.message.findMany({
+    where: { conversationId, tenantId },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      direction: true,
+      status: true,
+      aiGenerated: true,
+      content: true,
+      wamid: true,
+      sentAt: true,
+      createdAt: true,
+    },
+  });
+}
+
+module.exports = { existsByWamid, create, getRecentByConversation, findByConversation };
