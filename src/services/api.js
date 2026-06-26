@@ -20,6 +20,14 @@ function processQueue(error, token = null) {
   queue = [];
 }
 
+const PUBLIC_ROUTES = new Set(['/', '/login', '/cadastro', '/recuperar-senha']);
+
+function isPublicRoute() {
+  const hash = window.location.hash; // ex.: "#/", "#/login", "#/dashboard"
+  const path = hash.startsWith('#') ? hash.slice(1) : '/';
+  return PUBLIC_ROUTES.has(path);
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -52,7 +60,9 @@ api.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError);
       clearToken();
-      window.location.replace('/#/login');
+      if (!isPublicRoute()) {
+        window.location.replace('/#/login');
+      }
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
