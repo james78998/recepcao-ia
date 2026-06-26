@@ -3,11 +3,13 @@ jest.mock('../repositories/tenantRepository');
 jest.mock('../repositories/leadRepository');
 jest.mock('../repositories/conversationRepository');
 jest.mock('../repositories/messageRepository');
+jest.mock('../services/aiService');
 
 const tenantRepo = require('../repositories/tenantRepository');
 const leadRepo   = require('../repositories/leadRepository');
 const convRepo   = require('../repositories/conversationRepository');
 const msgRepo    = require('../repositories/messageRepository');
+const aiService  = require('../services/aiService');
 
 const {
   processInbound,
@@ -20,6 +22,7 @@ const TENANT = {
   id: 'tenant-uuid-1',
   name: 'Clínica Teste',
   whatsappPhoneNumberId: 'phone-number-id-1',
+  aiEnabled: true,
 };
 const LEAD = {
   id: 'lead-uuid-1',
@@ -57,7 +60,11 @@ function makeEntry(wamid, from, text, phoneNumberId = TENANT.whatsappPhoneNumber
   };
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  // Padrão: generateReply resolve sem fazer nada (fire-and-forget mockado)
+  aiService.generateReply.mockResolvedValue(undefined);
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('findOrCreateLead', () => {
@@ -203,6 +210,8 @@ describe('processInbound — fluxo completo', () => {
         leadId: LEAD.id,
         conversationId: CONV.id,
         direction: 'INBOUND',
+        status: 'SENT',
+        aiGenerated: false,
         wamid: 'wamid.fluxo_completo',
         content: 'Olá, quero agendar',
       })
@@ -262,6 +271,62 @@ describe('processInbound — fluxo completo', () => {
 
     expect(msgRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ tenantId: TENANT.id })
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('processInbound — integração com aiService', () => {
+  it('chama aiService.generateReply após salvar INBOUND quando aiEnabled=true', async () => {
+    tenantRepo.findByWhatsappPhoneNumberId.mockResolvedValue(TENANT); // aiEnabled: true
+    leadRepo.findByPhoneNormalized.mockResolvedValue(LEAD);
+    convRepo.findOpenByLead.mockResolvedValue(CONV);
+    msgRepo.existsByWamid.mockResolvedValue(false);
+    msgRepo.create.mockResolvedValue(MSG);
+
+    await processInbound(makeEntry('wamid.ai_enabled', '5511999990001', 'quero saber mais'));
+
+    expect(aiService.generateReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenant: expect.objectContaining({ id: TENANT.id }),
+        lead: LEAD,
+        conversation: CONV,
+        inboundText: 'quero saber mais',
+      })
+    );
+  });
+
+  it('não chama aiService.generateReply quando tenant.aiEnabled=false', async () => {
+    const tenantDisabled = { ...TENANT, aiEnabled: false };
+    tenantRepo.findByWhatsappPhoneNumberId.mockResolvedValue(tenantDisabled);
+    leadRepo.findByPhoneNormalized.mockResolvedValue(LEAD);
+    convRepo.findOpenByLead.mockResolvedValue(CONV);
+    msgRepo.existsByWamid.mockResolvedValue(false);
+    msgRepo.create.mockResolvedValue(MSG);
+
+    await processInbound(makeEntry('wamid.ai_disabled', '5511999990001', 'olá'));
+
+    expect(aiService.generateReply).not.toHaveBeenCalled();
+    expect(msgRepo.create).toHaveBeenCalledTimes(1); // apenas o INBOUND
+  });
+
+  it('falha da IA não impede que o INBOUND seja salvo', async () => {
+    tenantRepo.findByWhatsappPhoneNumberId.mockResolvedValue(TENANT);
+    leadRepo.findByPhoneNormalized.mockResolvedValue(LEAD);
+    convRepo.findOpenByLead.mockResolvedValue(CONV);
+    msgRepo.existsByWamid.mockResolvedValue(false);
+    msgRepo.create.mockResolvedValue(MSG);
+    aiService.generateReply.mockRejectedValue(new Error('OpenAI indisponível'));
+
+    // processInbound não deve lançar erro mesmo com falha da IA
+    await expect(
+      processInbound(makeEntry('wamid.ai_error', '5511999990001', 'olá'))
+    ).resolves.not.toThrow();
+
+    // INBOUND salvo com sucesso apesar do erro da IA
+    expect(msgRepo.create).toHaveBeenCalledTimes(1);
+    expect(msgRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ direction: 'INBOUND' })
     );
   });
 });

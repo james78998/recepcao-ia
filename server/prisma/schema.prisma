@@ -36,6 +36,13 @@ enum MessageChannel {
   WHATSAPP
 }
 
+enum MessageStatus {
+  DRAFT    // sugestão da IA — salva, mas não enviada
+  PENDING  // aprovada para envio — fila (Fase futura)
+  SENT     // confirmada enviada ou recebida com sucesso
+  FAILED   // falha no envio (Fase futura)
+}
+
 // ─── Modelos ──────────────────────────────────────────────────────────────────
 
 model Tenant {
@@ -43,6 +50,7 @@ model Tenant {
   name                  String
   email                 String  @unique
   whatsappPhoneNumberId String? // phone_number_id da Meta — identifica o tenant no webhook
+  aiEnabled             Boolean @default(true) // controla geração de rascunhos pela IA por tenant
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -122,6 +130,9 @@ model Message {
   leadId         String
   direction      MessageDirection
   content        String
+  status         MessageStatus    @default(SENT) // INBOUND=SENT; OUTBOUND IA=DRAFT
+  aiGenerated    Boolean          @default(false)
+  metadata       Json?            // dados do modelo IA (model, generatedAt, etc.)
   wamid          String?          @unique // ID único da mensagem no WhatsApp (idempotência)
   sentAt         DateTime?
   deliveredAt    DateTime?
@@ -134,5 +145,6 @@ model Message {
 
   @@index([tenantId])
   @@index([conversationId])
+  @@index([tenantId, status])
   @@map("messages")
 }

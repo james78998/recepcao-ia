@@ -3,6 +3,7 @@ const leadRepository = require('../repositories/leadRepository');
 const conversationRepository = require('../repositories/conversationRepository');
 const messageRepository = require('../repositories/messageRepository');
 const { normalizePhone } = require('../utils/phoneUtils');
+const aiService = require('./aiService');
 
 /**
  * Encontra o Lead pelo número normalizado ou cria um novo com source=WHATSAPP.
@@ -89,18 +90,29 @@ async function processInbound(entry) {
       // 4. Encontra ou abre Conversation
       const conversation = await findOrOpenConversation(tenant.id, lead.id);
 
-      // 5. Persiste a mensagem
+      // 5. Persiste a mensagem INBOUND
       await messageRepository.create({
         tenantId: tenant.id,
         conversationId: conversation.id,
         leadId: lead.id,
         direction: 'INBOUND',
+        status: 'SENT',
+        aiGenerated: false,
         content: text,
         wamid,
         sentAt,
       });
 
       console.info(`[webhook] mensagem recebida — lead: ${lead.id}, wamid: ${wamid}`);
+
+      // 6. Gera rascunho IA sem bloquear o webhook (fire-and-forget)
+      if (tenant.aiEnabled !== false) {
+        aiService
+          .generateReply({ tenant, lead, conversation, inboundText: text })
+          .catch(err =>
+            console.error(`[ai] erro ao gerar rascunho — lead: ${lead.id}: ${err.message}`),
+          );
+      }
     }
   }
 }
