@@ -1,7 +1,4 @@
 export function formatPhone(phone) {
-  return phone;
-}
-export function formatPhone(phone) {
   const numbers = phone.replace(/\D/g, "");
 
   if (numbers.length === 11) {
