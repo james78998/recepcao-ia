@@ -18,7 +18,17 @@ function generateTokens(user) {
 }
 
 function formatUser(user) {
-  return { id: user.id, name: user.name, email: user.email, role: user.role, tenantId: user.tenantId };
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    tenantId: user.tenantId,
+    tenant: {
+      id: user.tenant.id,
+      name: user.tenant.name,
+    },
+  };
 }
 
 async function register({ tenantName, tenantEmail, userName, userEmail, password }) {
@@ -40,7 +50,7 @@ async function register({ tenantName, tenantEmail, userName, userEmail, password
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-  const user = await prisma.$transaction(async (tx) => {
+  const createdUser = await prisma.$transaction(async (tx) => {
     const tenant = await tenantRepository.create({ name: tenantName, email: tenantEmail }, tx);
     return userRepository.create(
       { tenantId: tenant.id, name: userName, email: userEmail, passwordHash, role: 'ADMIN' },
@@ -48,12 +58,13 @@ async function register({ tenantName, tenantEmail, userName, userEmail, password
     );
   });
 
-  const { accessToken, refreshToken } = generateTokens(user);
-  return { accessToken, refreshToken, user: formatUser(user) };
+  const userWithTenant = await userRepository.findByIdWithTenant(createdUser.id);
+  const { accessToken, refreshToken } = generateTokens(userWithTenant);
+  return { accessToken, refreshToken, user: formatUser(userWithTenant) };
 }
 
 async function login({ email, password }) {
-  const user = await userRepository.findByEmail(email);
+  const user = await userRepository.findByEmailWithTenant(email);
   const passwordMatch = user ? await bcrypt.compare(password, user.passwordHash) : false;
 
   if (!user || !passwordMatch) {
@@ -76,7 +87,7 @@ async function refresh(refreshToken) {
     throw err;
   }
 
-  const user = await userRepository.findById(payload.sub);
+  const user = await userRepository.findByIdWithTenant(payload.sub);
   if (!user) {
     const err = new Error('Usuário não encontrado.');
     err.status = 401;
@@ -92,4 +103,14 @@ async function refresh(refreshToken) {
   return { accessToken, user: formatUser(user) };
 }
 
-module.exports = { register, login, refresh };
+async function me(userId) {
+  const user = await userRepository.findByIdWithTenant(userId);
+  if (!user) {
+    const err = new Error('Usuário não encontrado.');
+    err.status = 404;
+    throw err;
+  }
+  return formatUser(user);
+}
+
+module.exports = { register, login, refresh, me };

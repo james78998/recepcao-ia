@@ -51,4 +51,13 @@ async function logout(req, res) {
   res.json({ message: 'Logout realizado com sucesso.' });
 }
 
-module.exports = { register, login, refresh, logout };
+async function me(req, res, next) {
+  try {
+    const user = await authService.me(req.user.id);
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, logout, me };

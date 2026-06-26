@@ -1,23 +1,30 @@
+import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
 import StatCard from "../components/StatCard";
-import { leads } from "../data/leads";
-import { Link } from "react-router-dom";
+import Badge from "../components/Badge";
+import { useAuth } from "../hooks/useAuth";
+import { useLeads } from "../hooks/useLeads";
+import { getStatusColor } from "../utils/getStatusColor";
+import { STATUS_LABEL } from "../utils/leadUtils";
 
 function Dashboard() {
+  const { user } = useAuth();
+  const { leads, meta, loading } = useLeads({ perPage: 3 });
+
+  const firstName = user?.name?.split(' ')[0] ?? '';
+  const greeting = firstName ? `Bem-vindo, ${firstName}!` : 'Bem-vindo ao painel da Recepção IA.';
+
   return (
     <Layout active="dashboard">
-     
-        <PageTitle
-  title="Dashboard"
-  subtitle="Bem-vindo ao painel da Recepção IA."
-/>
-    <div className="grid md:grid-cols-4 gap-6 mb-10">
-  <StatCard title="Leads hoje" value="12" />
-  <StatCard title="Mensagens" value="38" />
-  <StatCard title="Agendamentos" value="9" />
-  <StatCard title="Status da IA" value="ONLINE" color="text-green-600" />
-</div>
+      <PageTitle title="Dashboard" subtitle={greeting} />
+
+      <div className="grid md:grid-cols-4 gap-6 mb-10">
+        <StatCard title="Total de leads" value={loading ? '—' : (meta?.total ?? 0)} />
+        <StatCard title="Mensagens" value="—" />
+        <StatCard title="Agendamentos" value="—" />
+        <StatCard title="Status da IA" value="ONLINE" color="text-green-600" />
+      </div>
 
       <div className="bg-white rounded-2xl shadow p-6">
         <h3 className="text-2xl font-bold text-blue-950 mb-6">
@@ -36,50 +43,53 @@ function Dashboard() {
             </thead>
 
             <tbody>
-              <tr className="border-b">
-                <td className="py-3">
-  <Link
-    to="/lead/1"
-    className="text-blue-900 font-bold hover:underline"
-  >
-    João Silva
-  </Link>
-</td>
-                <td className="py-3">Clínica Sorriso</td>
-                <td className="py-3">Odontologia</td>
-                <td className="py-3 text-green-600 font-bold">Novo lead</td>
-              </tr>
-
-              <tr className="border-b">
-                <td className="py-3">
-  <Link
-    to="/lead/2"
-    className="text-blue-900 font-bold hover:underline"
-  >
-    Maria Santos
-  </Link>
-</td>
-                <td className="py-3">Bella Estética</td>
-                <td className="py-3">Estética</td>
-                <td className="py-3 text-blue-600 font-bold">Demonstração</td>
-              </tr>
-
-              <tr>
-                <td className="py-3">
-  <Link
-    to="/lead/3"
-    className="text-blue-900 font-bold hover:underline"
-  >
-    Carlos Lima
-  </Link>
-</td>
-                <td className="py-3">Lima Advocacia</td>
-                <td className="py-3">Advocacia</td>
-                <td className="py-3 text-orange-600 font-bold">Proposta</td>
-              </tr>
+              {loading ? (
+                <tr>
+                  <td colSpan="4" className="py-8 text-center text-slate-400">
+                    <div className="w-6 h-6 border-4 border-blue-900 border-t-transparent rounded-full animate-spin mx-auto" />
+                  </td>
+                </tr>
+              ) : leads.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="py-8 text-center text-slate-400">
+                    Nenhum lead cadastrado ainda.{' '}
+                    <Link to="/novo-lead" className="text-blue-900 font-bold hover:underline">
+                      Cadastrar primeiro lead
+                    </Link>
+                  </td>
+                </tr>
+              ) : (
+                leads.map((lead) => (
+                  <tr key={lead.id} className="border-b">
+                    <td className="py-3">
+                      <Link
+                        to={`/lead/${lead.id}`}
+                        className="text-blue-900 font-bold hover:underline"
+                      >
+                        {lead.name}
+                      </Link>
+                    </td>
+                    <td className="py-3">{lead.company ?? '—'}</td>
+                    <td className="py-3">{lead.segment ?? '—'}</td>
+                    <td className="py-3">
+                      <Badge color={getStatusColor(lead.status)}>
+                        {STATUS_LABEL[lead.status] ?? lead.status}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        {!loading && leads.length > 0 && (
+          <div className="mt-4 text-right">
+            <Link to="/crm" className="text-blue-900 font-bold hover:underline text-sm">
+              Ver todos os leads →
+            </Link>
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 function Sidebar({ active }) {
+  const { user } = useAuth();
+  const companyName = user?.tenant?.name ?? 'Recepção IA';
+
   const menu = [
     { name: "Dashboard", path: "/dashboard", key: "dashboard" },
     { name: "CRM", path: "/crm", key: "crm" },
@@ -15,7 +19,7 @@ function Sidebar({ active }) {
   return (
     <aside className="w-72 bg-blue-950 text-white p-6 hidden md:block">
       <h1 className="text-2xl font-bold mb-10">
-        Recepção IA
+        {companyName}
       </h1>
 
       <nav className="space-y-4">

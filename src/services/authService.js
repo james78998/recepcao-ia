@@ -21,6 +21,11 @@ export async function refresh() {
   return response.data;
 }
 
+export async function me() {
+  const response = await api.get('/auth/me');
+  return response.data;
+}
+
 export async function logout() {
   await api.post('/auth/logout');
 }

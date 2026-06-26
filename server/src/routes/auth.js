@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const validate = require('../middlewares/validate');
+const authMiddleware = require('../middlewares/auth');
 const authController = require('../controllers/authController');
 
 const router = Router();
@@ -18,6 +19,7 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Senha obrigatória.'),
 });
 
+router.get('/me', authMiddleware, authController.me);
 router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', validate(loginSchema), authController.login);
 router.post('/refresh', authController.refresh);

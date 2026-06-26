@@ -13,9 +13,13 @@ export function AuthProvider({ children }) {
       .refresh()
       .then((data) => {
         setToken(data.accessToken);
-        setUser(data.user);
+        return authService.me();
+      })
+      .then((userData) => {
+        setUser(userData);
       })
       .catch(() => {
+        clearToken();
         // sessão inexistente ou expirada — estado inicial correto
       })
       .finally(() => setIsLoading(false));
