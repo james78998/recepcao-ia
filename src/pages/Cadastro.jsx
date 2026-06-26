@@ -1,10 +1,56 @@
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import Button from "../components/Button";
+import Input from "../components/Input";
+import Toast from "../components/Toast";
 
 function Cadastro() {
   const navigate = useNavigate();
+  const { register } = useAuth();
+  const [form, setForm] = useState({
+    userName: "",
+    tenantName: "",
+    whatsapp: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  function handleChange(e) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      setError("As senhas não coincidem.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await register({
+        tenantName: form.tenantName,
+        tenantEmail: form.email,
+        userName: form.userName,
+        userEmail: form.email,
+        password: form.password,
+      });
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.message || "Erro ao criar conta. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-6">
+      <Toast type="error" message={error} />
+
       <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg p-8">
         <h1 className="text-4xl font-bold text-blue-950 mb-2">
           Criar conta
@@ -14,50 +60,64 @@ function Cadastro() {
           Comece a usar a Recepção IA.
         </p>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <input
-            className="border p-3 rounded-xl"
-            placeholder="Nome"
-          />
+        <form onSubmit={handleSubmit}>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              name="userName"
+              placeholder="Nome"
+              value={form.userName}
+              onChange={handleChange}
+              required
+            />
 
-          <input
-            className="border p-3 rounded-xl"
-            placeholder="Empresa"
-          />
+            <Input
+              name="tenantName"
+              placeholder="Empresa"
+              value={form.tenantName}
+              onChange={handleChange}
+              required
+            />
 
-          <input
-            className="border p-3 rounded-xl"
-            placeholder="WhatsApp"
-          />
+            <Input
+              name="whatsapp"
+              placeholder="WhatsApp"
+              value={form.whatsapp}
+              onChange={handleChange}
+            />
 
-          <input
-            className="border p-3 rounded-xl"
-            type="email"
-            placeholder="E-mail"
-          />
+            <Input
+              name="email"
+              type="email"
+              placeholder="E-mail"
+              value={form.email}
+              onChange={handleChange}
+              required
+            />
 
-          <input
-            className="border p-3 rounded-xl"
-            type="password"
-            placeholder="Senha"
-          />
+            <Input
+              name="password"
+              type="password"
+              placeholder="Senha"
+              value={form.password}
+              onChange={handleChange}
+              minLength={8}
+              required
+            />
 
-          <input
-            className="border p-3 rounded-xl"
-            type="password"
-            placeholder="Confirmar senha"
-          />
-        </div>
+            <Input
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirmar senha"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <button
-  onClick={() => {
-    // TODO: substituir por cadastro real via API quando o backend estiver pronto
-    navigate("/dashboard");
-  }}
-  className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold mt-6"
->
-  Criar conta
-</button>
+          <Button type="submit" color="green" className="w-full mt-6" disabled={loading}>
+            {loading ? "Criando conta…" : "Criar conta"}
+          </Button>
+        </form>
 
         <p className="text-center mt-6 text-slate-600">
           Já tem conta?{" "}
