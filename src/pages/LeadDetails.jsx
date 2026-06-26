@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router-dom";
 function LeadDetails() {
   const { id } = useParams();
   const [showToast, setShowToast] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   return (
     <Layout active="crm">
       {showToast && (
@@ -14,7 +15,15 @@ function LeadDetails() {
         </div>
         
       )}
-      
+
+      <Modal
+        isOpen={showModal}
+        title="Excluir Lead"
+        message="Tem certeza que deseja excluir este lead?"
+        onClose={() => setShowModal(false)}
+        onConfirm={() => setShowModal(false)}
+      />
+
       <main className="flex-1 p-8">
         <Link to="/crm" className="text-blue-900 font-bold">
           ← Voltar para CRM
