@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import * as authService from '../services/authService';
 import { setToken, clearToken } from '../services/tokenStore';
 
@@ -6,6 +6,20 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    authService
+      .refresh()
+      .then((data) => {
+        setToken(data.accessToken);
+        setUser(data.user);
+      })
+      .catch(() => {
+        // sessão inexistente ou expirada — estado inicial correto
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const login = useCallback(async (email, password) => {
     const data = await authService.login({ email, password });
@@ -21,13 +35,17 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
-  const logout = useCallback(() => {
-    clearToken();
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } finally {
+      clearToken();
+      setUser(null);
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

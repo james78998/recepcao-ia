@@ -15,3 +15,12 @@ export async function register({ tenantName, tenantEmail, userName, userEmail, p
   });
   return response.data;
 }
+
+export async function refresh() {
+  const response = await api.post('/auth/refresh');
+  return response.data;
+}
+
+export async function logout() {
+  await api.post('/auth/logout');
+}

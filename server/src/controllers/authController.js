@@ -1,9 +1,22 @@
 const authService = require('../services/authService');
 
+const REFRESH_COOKIE = 'refreshToken';
+
+function cookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+}
+
 async function register(req, res, next) {
   try {
-    const result = await authService.register(req.body);
-    res.status(201).json(result);
+    const { accessToken, refreshToken, user } = await authService.register(req.body);
+    res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions());
+    res.status(201).json({ accessToken, user });
   } catch (err) {
     next(err);
   }
@@ -11,8 +24,9 @@ async function register(req, res, next) {
 
 async function login(req, res, next) {
   try {
-    const result = await authService.login(req.body);
-    res.json(result);
+    const { accessToken, refreshToken, user } = await authService.login(req.body);
+    res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions());
+    res.json({ accessToken, user });
   } catch (err) {
     next(err);
   }
@@ -20,11 +34,21 @@ async function login(req, res, next) {
 
 async function refresh(req, res, next) {
   try {
-    const result = await authService.refresh(req.body);
-    res.json(result);
+    const token = req.cookies?.[REFRESH_COOKIE];
+    if (!token) {
+      return res.status(401).json({ error: true, message: 'Sessão expirada. Faça login novamente.' });
+    }
+    const { accessToken, user } = await authService.refresh(token);
+    res.json({ accessToken, user });
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { register, login, refresh };
+async function logout(req, res) {
+  const { maxAge: _omit, ...clearOptions } = cookieOptions();
+  res.clearCookie(REFRESH_COOKIE, clearOptions);
+  res.json({ message: 'Logout realizado com sucesso.' });
+}
+
+module.exports = { register, login, refresh, logout };

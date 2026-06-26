@@ -48,7 +48,8 @@ async function register({ tenantName, tenantEmail, userName, userEmail, password
     );
   });
 
-  return { user: formatUser(user), ...generateTokens(user) };
+  const { accessToken, refreshToken } = generateTokens(user);
+  return { accessToken, refreshToken, user: formatUser(user) };
 }
 
 async function login({ email, password }) {
@@ -61,10 +62,11 @@ async function login({ email, password }) {
     throw err;
   }
 
-  return { user: formatUser(user), ...generateTokens(user) };
+  const { accessToken, refreshToken } = generateTokens(user);
+  return { accessToken, refreshToken, user: formatUser(user) };
 }
 
-async function refresh({ refreshToken }) {
+async function refresh(refreshToken) {
   let payload;
   try {
     payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
@@ -87,7 +89,7 @@ async function refresh({ refreshToken }) {
     { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
   );
 
-  return { accessToken };
+  return { accessToken, user: formatUser(user) };
 }
 
 module.exports = { register, login, refresh };
