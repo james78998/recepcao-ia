@@ -1,7 +1,12 @@
 import api from "./api";
 
-export async function getLeads() {
-  const response = await api.get("/leads");
+export async function getLeads(params = {}) {
+  const response = await api.get("/leads", { params });
+  return response.data;
+}
+
+export async function getLeadById(id) {
+  const response = await api.get(`/leads/${id}`);
   return response.data;
 }
 
@@ -16,6 +21,5 @@ export async function updateLead(id, data) {
 }
 
 export async function deleteLead(id) {
-  const response = await api.delete(`/leads/${id}`);
-  return response.data;
+  await api.delete(`/leads/${id}`);
 }

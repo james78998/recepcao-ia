@@ -1,18 +1,10 @@
 export function getStatusColor(status) {
   switch (status) {
-    case "Novo lead":
-      return "green";
-
-    case "Demonstração":
-      return "blue";
-
-    case "Proposta":
-      return "orange";
-
-    case "Cliente":
-      return "purple";
-
-    default:
-      return "gray";
+    case 'NOVO': return 'green';
+    case 'DEMONSTRACAO': return 'blue';
+    case 'PROPOSTA': return 'orange';
+    case 'CLIENTE_ATIVO': return 'purple';
+    case 'PERDIDO': return 'gray';
+    default: return 'gray';
   }
 }

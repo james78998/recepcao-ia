@@ -16,9 +16,9 @@ enum UserRole {
 
 enum LeadStatus {
   NOVO
-  EM_CONTATO
-  QUALIFICADO
-  CONVERTIDO
+  DEMONSTRACAO
+  PROPOSTA
+  CLIENTE_ATIVO
   PERDIDO
 }
 
@@ -59,6 +59,8 @@ model Lead {
   name      String
   phone     String
   email     String?
+  company   String?
+  segment   String?
   status    LeadStatus @default(NOVO)
   source    String?
   notes     String?

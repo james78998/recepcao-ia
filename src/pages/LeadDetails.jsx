@@ -1,39 +1,94 @@
-import { useState } from "react";
-import Modal from "../components/Modal";
+import { useState, useEffect } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
-import { Link, useParams } from "react-router-dom";
+import Modal from "../components/Modal";
+import Toast from "../components/Toast";
+import Loading from "../components/Loading";
+import Badge from "../components/Badge";
+import { getLeadById, updateLead, deleteLead } from "../services/leadsService";
+import { getStatusColor } from "../utils/getStatusColor";
+import { STATUS_LABEL } from "../utils/leadUtils";
 
 function LeadDetails() {
   const { id } = useParams();
-  const [showToast, setShowToast] = useState(false);
+  const navigate = useNavigate();
+
+  const [lead, setLead] = useState(null);
+  const [loadingLead, setLoadingLead] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLeadById(id)
+      .then((data) => { if (!cancelled) setLead(data); })
+      .catch((err) => { if (!cancelled && err?.response?.status === 404) setNotFound(true); })
+      .finally(() => { if (!cancelled) setLoadingLead(false); });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  async function handleMoverDemonstracao() {
+    try {
+      const updated = await updateLead(id, { status: "DEMONSTRACAO" });
+      setLead(updated);
+      setToast({ type: "success", message: "Lead movido para Demonstração!" });
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast({ type: "error", message: "Erro ao atualizar status." });
+      setTimeout(() => setToast(null), 3000);
+    }
+  }
+
+  async function handleExcluir() {
+    setDeleting(true);
+    try {
+      await deleteLead(id);
+      navigate("/crm");
+    } catch {
+      setShowModal(false);
+      setDeleting(false);
+      setToast({ type: "error", message: "Erro ao excluir lead." });
+      setTimeout(() => setToast(null), 3000);
+    }
+  }
+
+  if (loadingLead) return <Loading text="Carregando lead..." />;
+
+  if (notFound) {
+    return (
+      <Layout active="crm">
+        <Link to="/crm" className="text-blue-900 font-bold">← Voltar para CRM</Link>
+        <div className="mt-8">
+          <h2 className="text-3xl font-bold text-blue-950">Lead não encontrado</h2>
+          <p className="text-slate-500 mt-2">O lead solicitado não existe ou foi removido.</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout active="crm">
-      {showToast && (
-        <div className="fixed top-5 right-5 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50">
-          Lead movido para demonstração!
-        </div>
-        
-      )}
+      {toast && <Toast type={toast.type} message={toast.message} />}
 
       <Modal
         isOpen={showModal}
         title="Excluir Lead"
-        message="Tem certeza que deseja excluir este lead?"
+        message={`Tem certeza que deseja excluir o lead "${lead.name}"? Esta ação não pode ser desfeita.`}
         onClose={() => setShowModal(false)}
-        onConfirm={() => setShowModal(false)}
+        onConfirm={handleExcluir}
       />
 
-      <main className="flex-1 p-8">
+      <main className="flex-1">
         <Link to="/crm" className="text-blue-900 font-bold">
           ← Voltar para CRM
         </Link>
 
         <div className="mt-6 mb-8">
-          <h2 className="text-4xl font-bold text-blue-950">João Silva</h2>
-          <p className="text-slate-600 mt-2">
-            Lead captado automaticamente pela Recepção IA.
-          </p>
+          <h2 className="text-4xl font-bold text-blue-950">{lead.name}</h2>
+          <p className="text-slate-600 mt-2">Lead captado pela Recepção IA.</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -47,71 +102,59 @@ function LeadDetails() {
                 <p className="font-bold">Cliente - 10:30</p>
                 <p>Olá, gostaria de automatizar o atendimento da minha clínica.</p>
               </div>
-
               <div className="bg-green-100 p-4 rounded-xl">
                 <p className="font-bold">Recepção IA - 10:31</p>
-                <p>
-                  Olá! Será um prazer ajudar. Qual é o nome da sua empresa e
-                  quantos atendimentos recebe por dia?
-                </p>
-              </div>
-
-              <div className="bg-slate-100 p-4 rounded-xl">
-                <p className="font-bold">Cliente - 10:35</p>
-                <p>
-                  Minha empresa é a Clínica Sorriso e recebemos cerca de 30
-                  mensagens por dia.
-                </p>
-              </div>
-
-              <div className="bg-green-100 p-4 rounded-xl">
-                <p className="font-bold">Recepção IA - 10:36</p>
-                <p>
-                  Perfeito! Posso agendar uma demonstração para mostrar como a IA
-                  pode atender e organizar seus leads?
-                </p>
+                <p>Olá! Será um prazer ajudar. Qual é o nome da sua empresa e quantos atendimentos recebe por dia?</p>
               </div>
             </div>
           </section>
 
           <aside className="bg-white rounded-2xl shadow p-6">
-            <h3 className="text-2xl font-bold text-blue-950 mb-6">
-              Dados do lead
-            </h3>
+            <h3 className="text-2xl font-bold text-blue-950 mb-6">Dados do lead</h3>
 
             <div className="space-y-4 text-slate-700">
-              <p><strong>Nome:</strong> João Silva</p>
-              <p><strong>Empresa:</strong> Clínica Sorriso</p>
-              <p><strong>WhatsApp:</strong> 11 99999-9999</p>
-              <p><strong>Segmento:</strong> Odontologia</p>
-              <p><strong>Status:</strong> Novo lead</p>
-              <p><strong>Origem:</strong> WhatsApp</p>
+              <p><strong>Nome:</strong> {lead.name}</p>
+              <p><strong>Empresa:</strong> {lead.company ?? "—"}</p>
+              <p><strong>WhatsApp:</strong> {lead.phone}</p>
+              <p><strong>Segmento:</strong> {lead.segment ?? "—"}</p>
+              <p>
+                <strong>Status:</strong>{" "}
+                <Badge color={getStatusColor(lead.status)}>
+                  {STATUS_LABEL[lead.status] ?? lead.status}
+                </Badge>
+              </p>
+              {lead.source && <p><strong>Origem:</strong> {lead.source}</p>}
+              {lead.email && <p><strong>E-mail:</strong> {lead.email}</p>}
             </div>
 
             <div className="mt-8 space-y-3">
               <button className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold">
                 Enviar WhatsApp
               </button>
-              
-              <button
-                onClick={() => setShowToast(true)}
-                className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold"
-              >
-                Mover para Demonstração
-              </button>
+
+              {lead.status !== "DEMONSTRACAO" && (
+                <button
+                  onClick={handleMoverDemonstracao}
+                  className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold"
+                >
+                  Mover para Demonstração
+                </button>
+              )}
 
               <Link
-  to={`/editarlead/${id}`}
-  className="w-full block text-center bg-blue-900 hover:bg-blue-800 text-white py-4 rounded-xl font-bold transition"
->
-  Editar Lead
-</Link>
+                to={`/editarlead/${id}`}
+                className="w-full block text-center bg-blue-900 hover:bg-blue-800 text-white py-4 rounded-xl font-bold transition"
+              >
+                Editar Lead
+              </Link>
+
               <button
-  onClick={() => setShowModal(true)}
-  className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold"
->
-  Excluir Lead
-</button>
+                onClick={() => setShowModal(true)}
+                disabled={deleting}
+                className="w-full bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white py-3 rounded-xl font-bold"
+              >
+                {deleting ? "Excluindo..." : "Excluir Lead"}
+              </button>
             </div>
           </aside>
         </div>

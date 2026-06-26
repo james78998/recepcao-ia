@@ -1,31 +1,36 @@
-import { useState } from "react";
-import { leads as mockLeads } from "../data/leads";
+import { useState, useEffect, useCallback } from "react";
+import { getLeads } from "../services/leadsService";
 
-export function useLeads() {
-  const [leads, setLeads] = useState(mockLeads);
+export function useLeads({ search = '', page = 1, perPage = 10 } = {}) {
+  const [leads, setLeads] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tick, setTick] = useState(0);
 
-  function addLead(lead) {
-    setLeads([...leads, lead]);
-  }
+  const refetch = useCallback(() => setTick((t) => t + 1), []);
 
-  function removeLead(id) {
-    setLeads(leads.filter((lead) => lead.id !== id));
-  }
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    getLeads({ search, page, perPage })
+      .then((result) => {
+        if (cancelled) return;
+        setLeads(result.data);
+        setMeta(result.meta);
+        setStats(result.stats);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err?.response?.data?.message || 'Erro ao carregar leads.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [search, page, perPage, tick]);
 
-  function updateLead(id, newData) {
-    setLeads(
-      leads.map((lead) =>
-        lead.id === id
-          ? { ...lead, ...newData }
-          : lead
-      )
-    );
-  }
-
-  return {
-    leads,
-    addLead,
-    removeLead,
-    updateLead,
-  };
+  return { leads, meta, stats, loading, error, refetch };
 }

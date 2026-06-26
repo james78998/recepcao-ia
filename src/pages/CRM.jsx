@@ -1,42 +1,31 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import Pagination from "../components/Pagination";
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
 import StatCard from "../components/StatCard";
 import Badge from "../components/Badge";
 import SearchBar from "../components/SearchBar";
 import DataTable from "../components/DataTable";
-import { leads } from "../data/leads";
+import Pagination from "../components/Pagination";
+import EmptyState from "../components/EmptyState";
+import { useLeads } from "../hooks/useLeads";
+import { getStatusColor } from "../utils/getStatusColor";
+import { STATUS_LABEL } from "../utils/leadUtils";
 
 function CRM() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const leadsPerPage = 5;
+  const { leads, meta, stats, loading, error } = useLeads({
+    search,
+    page: currentPage,
+    perPage: 10,
+  });
 
-  function getStatusColor(status) {
-    if (status === "Novo lead") return "green";
-    if (status === "Demonstração") return "blue";
-    if (status === "Proposta") return "orange";
-    if (status === "Cliente ativo") return "purple";
-    return "gray";
+  function handleSearch(e) {
+    setSearch(e.target.value);
+    setCurrentPage(1);
   }
-
-  const filteredLeads = leads.filter(
-    (lead) =>
-      lead.nome.toLowerCase().includes(search.toLowerCase()) ||
-      lead.empresa.toLowerCase().includes(search.toLowerCase()) ||
-      lead.segmento.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(filteredLeads.length / leadsPerPage);
-
-  const startIndex = (currentPage - 1) * leadsPerPage;
-  const currentLeads = filteredLeads.slice(
-    startIndex,
-    startIndex + leadsPerPage
-  );
 
   return (
     <Layout active="crm">
@@ -45,79 +34,89 @@ function CRM() {
           title="CRM"
           subtitle="Gerencie leads, oportunidades e clientes."
         />
-
         <Link
-  to="/novo-lead"
-  className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold"
->
-  Novo Lead
-</Link>
+          to="/novo-lead"
+          className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold"
+        >
+          Novo Lead
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-4 gap-6 mb-10">
-        <StatCard title="Novos leads" value="18" />
-        <StatCard title="Demonstrações" value="7" />
-        <StatCard title="Propostas" value="3" color="text-orange-500" />
-        <StatCard title="Clientes ativos" value="2" color="text-green-600" />
+        <StatCard title="Novos leads" value={stats?.NOVO ?? "—"} />
+        <StatCard title="Demonstrações" value={stats?.DEMONSTRACAO ?? "—"} />
+        <StatCard title="Propostas" value={stats?.PROPOSTA ?? "—"} color="text-orange-500" />
+        <StatCard title="Clientes ativos" value={stats?.CLIENTE_ATIVO ?? "—"} color="text-green-600" />
       </div>
 
       <div className="mb-6">
         <SearchBar
           placeholder="Pesquisar lead, empresa ou segmento..."
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={handleSearch}
         />
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
+          {error}
+        </div>
+      )}
+
       <DataTable
         title="Lista de leads"
-        headers={["Nome", "WhatsApp", "Empresa", "Segmento", "Status", "Ações"]}
+        headers={["Nome", "Telefone", "Empresa", "Segmento", "Status", "Ações"]}
       >
-        {currentLeads.map((lead, index) => (
-          <tr key={index} className="border-b">
-            <td className="py-3">{lead.nome}</td>
-            <td className="py-3">{lead.whatsapp}</td>
-            <td className="py-3">{lead.empresa}</td>
-            <td className="py-3">{lead.segmento}</td>
-            <td className="py-3">
-              <Badge color={getStatusColor(lead.status)}>
-                {lead.status}
-              </Badge>
-            </td>
-            <td className="py-3">
-              <Link
-                to={`/lead/${startIndex + index + 1}`}
-                className="bg-blue-900 text-white px-4 py-2 rounded-lg mr-2 inline-block"
-              >
-                Ver
-              </Link>
-
-              <Link
-  to={`/editar-lead/${lead.id}`}
-  className="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg"
->
-  Editar
-</Link>
-            </td>
-          </tr>
-        ))}
-
-        {currentLeads.length === 0 && (
+        {loading ? (
           <tr>
-            <td colSpan="6" className="py-6 text-center text-slate-500">
-              Nenhum lead encontrado.
+            <td colSpan="6" className="py-10 text-center text-slate-400">
+              <div className="w-8 h-8 border-4 border-blue-900 border-t-transparent rounded-full animate-spin mx-auto" />
             </td>
           </tr>
+        ) : leads.length === 0 ? (
+          <tr>
+            <td colSpan="6" className="py-6">
+              <EmptyState
+                title="Nenhum lead encontrado"
+                description={search ? "Tente outro termo de pesquisa." : "Cadastre o primeiro lead."}
+              />
+            </td>
+          </tr>
+        ) : (
+          leads.map((lead) => (
+            <tr key={lead.id} className="border-b">
+              <td className="py-3">{lead.name}</td>
+              <td className="py-3">{lead.phone}</td>
+              <td className="py-3">{lead.company ?? "—"}</td>
+              <td className="py-3">{lead.segment ?? "—"}</td>
+              <td className="py-3">
+                <Badge color={getStatusColor(lead.status)}>
+                  {STATUS_LABEL[lead.status] ?? lead.status}
+                </Badge>
+              </td>
+              <td className="py-3">
+                <Link
+                  to={`/lead/${lead.id}`}
+                  className="bg-blue-900 text-white px-4 py-2 rounded-lg mr-2 inline-block"
+                >
+                  Ver
+                </Link>
+                <Link
+                  to={`/editarlead/${lead.id}`}
+                  className="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg inline-block"
+                >
+                  Editar
+                </Link>
+              </td>
+            </tr>
+          ))
         )}
       </DataTable>
 
-      {totalPages > 1 && (
+      {!loading && meta && meta.totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={meta.totalPages}
           onPageChange={setCurrentPage}
         />
       )}

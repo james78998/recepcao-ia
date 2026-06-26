@@ -2,23 +2,27 @@ import { describe, it, expect } from 'vitest'
 import { getStatusColor } from '../getStatusColor'
 
 describe('getStatusColor', () => {
-  it('"Novo lead" retorna "green"', () => {
-    expect(getStatusColor('Novo lead')).toBe('green')
+  it('"NOVO" retorna "green"', () => {
+    expect(getStatusColor('NOVO')).toBe('green')
   })
 
-  it('"Demonstração" retorna "blue"', () => {
-    expect(getStatusColor('Demonstração')).toBe('blue')
+  it('"DEMONSTRACAO" retorna "blue"', () => {
+    expect(getStatusColor('DEMONSTRACAO')).toBe('blue')
   })
 
-  it('"Proposta" retorna "orange"', () => {
-    expect(getStatusColor('Proposta')).toBe('orange')
+  it('"PROPOSTA" retorna "orange"', () => {
+    expect(getStatusColor('PROPOSTA')).toBe('orange')
   })
 
-  it('"Cliente" retorna "purple"', () => {
-    expect(getStatusColor('Cliente')).toBe('purple')
+  it('"CLIENTE_ATIVO" retorna "purple"', () => {
+    expect(getStatusColor('CLIENTE_ATIVO')).toBe('purple')
+  })
+
+  it('"PERDIDO" retorna "gray"', () => {
+    expect(getStatusColor('PERDIDO')).toBe('gray')
   })
 
   it('status desconhecido retorna "gray"', () => {
-    expect(getStatusColor('Desconhecido')).toBe('gray')
+    expect(getStatusColor('DESCONHECIDO')).toBe('gray')
   })
 })
