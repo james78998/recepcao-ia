@@ -8,4 +8,8 @@ async function findByEmail(email, db = prisma) {
   return db.tenant.findUnique({ where: { email } });
 }
 
-module.exports = { create, findByEmail };
+async function findByWhatsappPhoneNumberId(phoneNumberId) {
+  return prisma.tenant.findFirst({ where: { whatsappPhoneNumberId: phoneNumberId } });
+}
+
+module.exports = { create, findByEmail, findByWhatsappPhoneNumberId };

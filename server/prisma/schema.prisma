@@ -22,17 +22,35 @@ enum LeadStatus {
   PERDIDO
 }
 
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageChannel {
+  WHATSAPP
+}
+
 // ─── Modelos ──────────────────────────────────────────────────────────────────
 
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
+  id                    String  @id @default(uuid())
+  name                  String
+  email                 String  @unique
+  whatsappPhoneNumberId String? // phone_number_id da Meta — identifica o tenant no webhook
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users User[]
-  leads Lead[]
+  users         User[]
+  leads         Lead[]
+  conversations Conversation[]
+  messages      Message[]
 
   @@map("tenants")
 }
@@ -54,22 +72,67 @@ model User {
 }
 
 model Lead {
-  id        String     @id @default(uuid())
-  tenantId  String
-  name      String
-  phone     String
-  email     String?
-  company   String?
-  segment   String?
-  status    LeadStatus @default(NOVO)
-  source    String?
-  notes     String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id              String     @id @default(uuid())
+  tenantId        String
+  name            String
+  phone           String
+  phoneNormalized String?    // apenas dígitos (E.164 sem +), para busca via WhatsApp
+  email           String?
+  company         String?
+  segment         String?
+  status          LeadStatus @default(NOVO)
+  source          String?
+  notes           String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  messages      Message[]
 
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, phoneNormalized])
   @@map("leads")
+}
+
+model Conversation {
+  id        String             @id @default(uuid())
+  tenantId  String
+  leadId    String
+  channel   MessageChannel     @default(WHATSAPP)
+  status    ConversationStatus @default(OPEN)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead     Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([tenantId])
+  @@index([leadId])
+  @@index([tenantId, status])
+  @@map("conversations")
+}
+
+model Message {
+  id             String           @id @default(uuid())
+  tenantId       String
+  conversationId String
+  leadId         String
+  direction      MessageDirection
+  content        String
+  wamid          String?          @unique // ID único da mensagem no WhatsApp (idempotência)
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  createdAt      DateTime         @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([conversationId])
+  @@map("messages")
 }

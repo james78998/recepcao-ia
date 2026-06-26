@@ -51,6 +51,10 @@ async function findById(id, tenantId) {
   return prisma.lead.findFirst({ where: { id, tenantId } });
 }
 
+async function findByPhoneNormalized(tenantId, phoneNormalized) {
+  return prisma.lead.findFirst({ where: { tenantId, phoneNormalized } });
+}
+
 async function create(data) {
   return prisma.lead.create({ data });
 }
@@ -63,4 +67,4 @@ async function remove(id) {
   return prisma.lead.delete({ where: { id } });
 }
 
-module.exports = { findAll, findById, create, update, remove };
+module.exports = { findAll, findById, findByPhoneNormalized, create, update, remove };

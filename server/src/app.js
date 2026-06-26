@@ -21,7 +21,12 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+// Captura o body bruto para validação da assinatura HMAC do webhook da Meta
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(cookieParser());
 
 app.get('/', (req, res) => {

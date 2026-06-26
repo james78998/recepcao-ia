@@ -1,4 +1,5 @@
 const leadRepository = require('../repositories/leadRepository');
+const { normalizePhone } = require('../utils/phoneUtils');
 
 function notFound() {
   const err = new Error('Lead não encontrado.');
@@ -23,12 +24,20 @@ async function getById(id, tenantId) {
 }
 
 async function create(tenantId, data) {
-  return leadRepository.create({ ...data, tenantId });
+  return leadRepository.create({
+    ...data,
+    tenantId,
+    phoneNormalized: normalizePhone(data.phone),
+  });
 }
 
 async function update(id, tenantId, data) {
   await getById(id, tenantId);
-  return leadRepository.update(id, data);
+  const payload = { ...data };
+  if (data.phone !== undefined) {
+    payload.phoneNormalized = normalizePhone(data.phone);
+  }
+  return leadRepository.update(id, payload);
 }
 
 async function remove(id, tenantId) {
