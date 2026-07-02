@@ -15,10 +15,18 @@ function AdminTenants() {
 
   return (
     <AdminLayout active="tenants">
-      <PageTitle
-        title="Clientes"
-        subtitle="Tenants cadastrados na plataforma Recepção IA."
-      />
+      <div className="flex items-start justify-between">
+        <PageTitle
+          title="Clientes"
+          subtitle="Tenants cadastrados na plataforma Recepção IA."
+        />
+        <Link
+          to="/admin/tenants/novo"
+          className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold"
+        >
+          Novo Cliente
+        </Link>
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">

@@ -1,10 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const prisma = require('../repositories/prisma');
 const userRepository = require('../repositories/userRepository');
-const tenantRepository = require('../repositories/tenantRepository');
-
-const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+const tenantOnboardingService = require('./tenantOnboardingService');
 
 function generateTokens(user) {
   const payload = { sub: user.id, tenantId: user.tenantId, role: user.role };
@@ -32,33 +29,14 @@ function formatUser(user) {
 }
 
 async function register({ tenantName, tenantEmail, userName, userEmail, password }) {
-  const [existingTenant, existingUser] = await Promise.all([
-    tenantRepository.findByEmail(tenantEmail),
-    userRepository.findByEmail(userEmail),
-  ]);
-
-  if (existingTenant) {
-    const err = new Error('E-mail de empresa já cadastrado.');
-    err.status = 409;
-    throw err;
-  }
-  if (existingUser) {
-    const err = new Error('E-mail de usuário já cadastrado.');
-    err.status = 409;
-    throw err;
-  }
-
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-  const createdUser = await prisma.$transaction(async (tx) => {
-    const tenant = await tenantRepository.create({ name: tenantName, email: tenantEmail }, tx);
-    return userRepository.create(
-      { tenantId: tenant.id, name: userName, email: userEmail, passwordHash, role: 'ADMIN' },
-      tx
-    );
+  const userWithTenant = await tenantOnboardingService.onboardTenant({
+    tenantName,
+    tenantEmail,
+    userName,
+    userEmail,
+    password,
   });
 
-  const userWithTenant = await userRepository.findByIdWithTenant(createdUser.id);
   const { accessToken, refreshToken } = generateTokens(userWithTenant);
   return { accessToken, refreshToken, user: formatUser(userWithTenant) };
 }

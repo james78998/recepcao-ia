@@ -18,4 +18,13 @@ async function getById(req, res, next) {
   }
 }
 
-module.exports = { list, getById };
+async function create(req, res, next) {
+  try {
+    const tenant = await adminTenantService.create(req.body);
+    res.status(201).json(tenant);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, getById, create };

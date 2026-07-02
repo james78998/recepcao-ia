@@ -28,6 +28,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTenants from "./pages/admin/AdminTenants";
 import AdminTenantDetails from "./pages/admin/AdminTenantDetails";
+import AdminNovoTenant from "./pages/admin/AdminNovoTenant";
 
 function App() {
   return (
@@ -66,6 +67,7 @@ function App() {
         <Route element={<AdminPrivateRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/tenants" element={<AdminTenants />} />
+          <Route path="/admin/tenants/novo" element={<AdminNovoTenant />} />
           <Route path="/admin/tenants/:id" element={<AdminTenantDetails />} />
         </Route>
       </Routes>

@@ -1,4 +1,5 @@
 const tenantRepository = require('../repositories/tenantRepository');
+const tenantOnboardingService = require('./tenantOnboardingService');
 
 function formatTenant(tenant) {
   const { _count, ...rest } = tenant;
@@ -25,4 +26,16 @@ async function getById(id) {
   return formatTenant(tenant);
 }
 
-module.exports = { list, getById };
+async function create({ tenantName, tenantEmail, userName, userEmail, password }) {
+  const { tenant } = await tenantOnboardingService.onboardTenant({
+    tenantName,
+    tenantEmail,
+    userName,
+    userEmail,
+    password,
+  });
+
+  return getById(tenant.id);
+}
+
+module.exports = { list, getById, create };

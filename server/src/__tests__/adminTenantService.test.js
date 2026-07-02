@@ -1,7 +1,9 @@
 jest.mock('../repositories/tenantRepository');
+jest.mock('../services/tenantOnboardingService');
 
 const tenantRepository = require('../repositories/tenantRepository');
-const { list, getById } = require('../services/adminTenantService');
+const tenantOnboardingService = require('../services/tenantOnboardingService');
+const { list, getById, create } = require('../services/adminTenantService');
 
 const TENANT_ROW = {
   id: 'tenant-uuid-1',
@@ -69,5 +71,36 @@ describe('adminTenantService.getById', () => {
     tenantRepository.findByIdForAdmin.mockResolvedValue(null);
 
     await expect(getById('id-inexistente')).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('adminTenantService.create', () => {
+  const INPUT = {
+    tenantName: 'Clínica Teste',
+    tenantEmail: 'clinica@teste.com',
+    userName: 'Admin Teste',
+    userEmail: 'admin@teste.com',
+    password: 'senha1234',
+  };
+
+  it('cria o tenant via onboarding e retorna o tenant formatado', async () => {
+    tenantOnboardingService.onboardTenant.mockResolvedValue({
+      tenant: { id: TENANT_ROW.id },
+    });
+    tenantRepository.findByIdForAdmin.mockResolvedValue(TENANT_ROW);
+
+    const result = await create(INPUT);
+
+    expect(tenantOnboardingService.onboardTenant).toHaveBeenCalledWith(INPUT);
+    expect(tenantRepository.findByIdForAdmin).toHaveBeenCalledWith(TENANT_ROW.id);
+    expect(result.totalUsers).toBe(1);
+    expect(result._count).toBeUndefined();
+  });
+
+  it('propaga erro de e-mail duplicado do onboarding', async () => {
+    const conflictErr = Object.assign(new Error('E-mail de empresa já cadastrado.'), { status: 409 });
+    tenantOnboardingService.onboardTenant.mockRejectedValue(conflictErr);
+
+    await expect(create(INPUT)).rejects.toMatchObject({ status: 409 });
   });
 });
