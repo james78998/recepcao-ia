@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 function AdminSidebar({ active }) {
   const menu = [
     { name: "Dashboard", path: "/admin/dashboard", key: "dashboard" },
+    { name: "Clientes", path: "/admin/tenants", key: "tenants" },
   ];
 
   return (
