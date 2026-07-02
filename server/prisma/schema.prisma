@@ -14,6 +14,10 @@ enum UserRole {
   RECEPTIONIST
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+}
+
 enum LeadStatus {
   NOVO
   DEMONSTRACAO
@@ -61,6 +65,21 @@ model Tenant {
   messages      Message[]
 
   @@map("tenants")
+}
+
+// Conta da equipe da plataforma (Recepção IA), fora do escopo de qualquer Tenant.
+// Não possui tenantId por definição — gerenciamento de tenants é feito de fora do multi-tenant.
+model AdminUser {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(SUPER_ADMIN)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("admin_users")
 }
 
 model User {

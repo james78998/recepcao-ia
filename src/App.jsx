@@ -22,6 +22,11 @@ import Financeiro from "./pages/Financeiro";
 import Configuracoes from "./pages/Configuracoes";
 import Perfil from "./pages/Perfil";
 
+import AdminPrivateRoute from "./components/AdminPrivateRoute";
+import AdminPublicRoute from "./components/AdminPublicRoute";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+
 function App() {
   return (
     <HashRouter>
@@ -49,6 +54,15 @@ function App() {
           <Route path="/financeiro" element={<Financeiro />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="/perfil" element={<Perfil />} />
+        </Route>
+
+        {/* Painel Super Admin — realm de autenticação separado do Tenant */}
+        <Route element={<AdminPublicRoute />}>
+          <Route path="/admin/login" element={<AdminLogin />} />
+        </Route>
+
+        <Route element={<AdminPrivateRoute />}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Route>
       </Routes>
     </HashRouter>
