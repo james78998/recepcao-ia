@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Layout from "../components/Layout";
 import Badge from "../components/Badge";
 import EmptyState from "../components/EmptyState";
-import { getConversations, getConversationMessages } from "../services/conversationsService";
+import { getConversations, getConversationMessages, sendMessage } from "../services/conversationsService";
 
 function formatTime(dateStr) {
   if (!dateStr) return "";
@@ -99,6 +99,8 @@ function WhatsApp() {
   const [loadingMsgs, setLoadingMsgs]     = useState(false);
   const [listError, setListError]         = useState(null);
   const [search, setSearch]               = useState("");
+  const [sendingId, setSendingId]         = useState(null);
+  const [sendError, setSendError]         = useState(null);
   const messagesEndRef                    = useRef(null);
 
   const loadConversations = useCallback(async () => {
@@ -132,6 +134,8 @@ function WhatsApp() {
 
   useEffect(() => {
     if (!selectedId) return;
+    setSendError(null);
+    setSendingId(null);
     loadMessages(selectedId);
     const interval = setInterval(() => loadMessages(selectedId), 10_000);
     return () => clearInterval(interval);
@@ -145,9 +149,26 @@ function WhatsApp() {
     (c.lead?.name || c.lead?.phone || "").toLowerCase().includes(search.toLowerCase()),
   );
 
-  const hasDraft = messages.some(
+  const draftMessage = messages.find(
     (m) => m.direction === "OUTBOUND" && m.status === "DRAFT",
   );
+  const hasDraft = !!draftMessage;
+
+  async function handleSend() {
+    if (!draftMessage || sendingId) return;
+    setSendingId(draftMessage.id);
+    setSendError(null);
+    try {
+      const updated = await sendMessage(draftMessage.id);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === draftMessage.id ? { ...m, ...updated } : m)),
+      );
+    } catch {
+      setSendError("Não foi possível enviar. Tente novamente.");
+    } finally {
+      setSendingId(null);
+    }
+  }
 
   return (
     <Layout active="WhatsApp">
@@ -246,22 +267,38 @@ function WhatsApp() {
               {/* Barra de ações do rascunho */}
               {hasDraft && (
                 <div className="px-4 py-3 border-t border-amber-100 bg-amber-50 flex items-center gap-3 shrink-0">
-                  <p className="text-sm text-amber-700 font-medium flex-1">
-                    Rascunho da IA pronto para revisão
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-amber-700 font-medium">
+                      Rascunho da IA pronto para revisão
+                    </p>
+                    {sendError && (
+                      <p className="text-xs text-red-500 mt-0.5">{sendError}</p>
+                    )}
+                  </div>
                   <button
                     disabled
-                    className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-200 text-slate-400 cursor-not-allowed"
+                    className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-200 text-slate-400 cursor-not-allowed shrink-0"
                     title="Disponível em breve"
                   >
                     Regenerar IA
                   </button>
                   <button
-                    disabled
-                    className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-200 text-slate-400 cursor-not-allowed"
-                    title="Disponível em breve"
+                    onClick={handleSend}
+                    disabled={!!sendingId}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors shrink-0 flex items-center gap-2 ${
+                      sendingId
+                        ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                        : "bg-blue-900 text-white hover:bg-blue-800"
+                    }`}
                   >
-                    Enviar
+                    {sendingId ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      "Enviar"
+                    )}
                   </button>
                 </div>
               )}
