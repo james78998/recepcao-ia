@@ -6,6 +6,7 @@ const conversationsRoutes = require('./conversations');
 const messagesRoutes      = require('./messages');
 const adminAuthRoutes     = require('./adminAuth');
 const adminTenantsRoutes  = require('./adminTenants');
+const tenantSettingsRoutes = require('./tenantSettings');
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/conversations', conversationsRoutes);
 router.use('/messages',      messagesRoutes);
 router.use('/admin/auth',    adminAuthRoutes);
 router.use('/admin/tenants', adminTenantsRoutes);
+router.use('/tenants/me',    tenantSettingsRoutes);
 
 module.exports = router;

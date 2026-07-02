@@ -1,8 +1,10 @@
 jest.mock('../repositories/messageRepository');
 jest.mock('../integrations/openai/openAiClient');
+jest.mock('../services/tenantAiConfigService');
 
 const messageRepo = require('../repositories/messageRepository');
 const openAiClient = require('../integrations/openai/openAiClient');
+const tenantAiConfigService = require('../services/tenantAiConfigService');
 const { generateReply, buildSystemPrompt } = require('../services/aiService');
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -15,10 +17,19 @@ const INBOUND_HISTORY = [
   { direction: 'INBOUND',  content: 'mensagem atual' }, // simula o INBOUND recém-salvo
 ];
 
+const DEFAULT_AI_CONFIG = {
+  apiKey: 'sk-env-key',
+  model: 'gpt-4o-mini',
+  customPrompt: null,
+  temperature: undefined,
+  maxTokens: 300,
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   delete process.env.OPENAI_DRY_RUN;
   messageRepo.create.mockResolvedValue({ id: 'msg-draft-1' });
+  tenantAiConfigService.getEffectiveConfig.mockResolvedValue(DEFAULT_AI_CONFIG);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -143,6 +154,57 @@ describe('generateReply — fluxo normal', () => {
     ).rejects.toThrow('OpenAI timeout');
 
     expect(messageRepo.create).not.toHaveBeenCalled();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('generateReply — configuração de IA por tenant', () => {
+  beforeEach(() => {
+    messageRepo.getRecentByConversation.mockResolvedValue(INBOUND_HISTORY);
+    openAiClient.complete.mockResolvedValue('ok');
+  });
+
+  it('repassa model, maxTokens, temperature e apiKey do tenant para o openAiClient', async () => {
+    tenantAiConfigService.getEffectiveConfig.mockResolvedValue({
+      apiKey: 'sk-tenant-key',
+      model: 'gpt-4o',
+      customPrompt: null,
+      temperature: 0.9,
+      maxTokens: 800,
+    });
+
+    await generateReply({ tenant: TENANT, lead: LEAD, conversation: CONV, inboundText: 'mensagem atual' });
+
+    expect(openAiClient.complete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'gpt-4o',
+        maxTokens: 800,
+        temperature: 0.9,
+        apiKey: 'sk-tenant-key',
+      }),
+    );
+  });
+
+  it('soma o customPrompt do tenant às regras fixas na mensagem de sistema', async () => {
+    tenantAiConfigService.getEffectiveConfig.mockResolvedValue({
+      ...DEFAULT_AI_CONFIG,
+      customPrompt: 'Sempre mencione o desconto de primeira consulta.',
+    });
+
+    await generateReply({ tenant: TENANT, lead: LEAD, conversation: CONV, inboundText: 'mensagem atual' });
+
+    const systemMessage = openAiClient.complete.mock.calls[0][0].messages.find(m => m.role === 'system');
+    expect(systemMessage.content).toContain('Regras obrigatórias:'); // regra fixa preservada
+    expect(systemMessage.content).toContain('Sempre mencione o desconto de primeira consulta.');
+  });
+
+  it('não altera a mensagem de sistema quando o tenant não tem customPrompt', async () => {
+    tenantAiConfigService.getEffectiveConfig.mockResolvedValue(DEFAULT_AI_CONFIG);
+
+    await generateReply({ tenant: TENANT, lead: LEAD, conversation: CONV, inboundText: 'mensagem atual' });
+
+    const systemMessage = openAiClient.complete.mock.calls[0][0].messages.find(m => m.role === 'system');
+    expect(systemMessage.content).toBe(buildSystemPrompt(TENANT, LEAD));
   });
 });
 

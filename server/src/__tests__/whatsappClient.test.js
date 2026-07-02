@@ -100,6 +100,15 @@ describe('sendMessage — sucesso', () => {
     const [, options] = global.fetch.mock.calls[0];
     expect(options.signal).toBeDefined();
   });
+
+  it('usa o token recebido por parâmetro em vez do WHATSAPP_TOKEN do env', async () => {
+    global.fetch.mockResolvedValue({ ok: true, json: async () => META_SUCCESS });
+
+    await sendMessage({ ...BASE_PARAMS, token: 'token-do-tenant' });
+
+    const [, options] = global.fetch.mock.calls[0];
+    expect(options.headers.Authorization).toBe('Bearer token-do-tenant');
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

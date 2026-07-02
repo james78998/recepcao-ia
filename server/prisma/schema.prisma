@@ -47,24 +47,177 @@ enum MessageStatus {
   FAILED   // falha no envio (Fase futura)
 }
 
+enum ConnectionStatus {
+  NOT_CONNECTED
+  CONNECTED
+  ERROR
+  EXPIRED
+}
+
+enum IntegrationProvider {
+  GOOGLE_CALENDAR
+  DENTAL_OFFICE
+}
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
 // ─── Modelos ──────────────────────────────────────────────────────────────────
 
 model Tenant {
   id                    String  @id @default(uuid())
   name                  String
   email                 String  @unique
+  phone                 String? // telefone de contato da clínica, exibido em Configurações
+  address               String? // endereço da clínica, exibido em Configurações
+  logoPath              String? // caminho/chave do logo (preparado para upload futuro em S3/R2/MinIO/local)
   whatsappPhoneNumberId String? // phone_number_id da Meta — identifica o tenant no webhook
   aiEnabled             Boolean @default(true) // controla geração de rascunhos pela IA por tenant
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users         User[]
-  leads         Lead[]
-  conversations Conversation[]
-  messages      Message[]
+  users             User[]
+  leads             Lead[]
+  conversations     Conversation[]
+  messages          Message[]
+  aiConfig          TenantAiConfig?
+  whatsappConfig    TenantWhatsappConfig?
+  scheduleConfig    TenantScheduleConfig?
+  businessHours     TenantBusinessHour[]
+  integrations      TenantIntegration[]
+  auditLogs         AuditLog[]
 
   @@map("tenants")
+}
+
+// Parâmetros de geração de IA por tenant. basePrompt (regras fixas do produto,
+// não editáveis pelo cliente) vive em código (aiService) — aqui só o que é
+// configurável: chave, modelo, prompt customizado e limites de geração.
+model TenantAiConfig {
+  id                     String   @id @default(uuid())
+  tenantId               String   @unique
+  openAiApiKeyEncrypted  String? // nunca em texto puro — ver utils/encryption.js
+  openAiModel            String? // null = usa OPENAI_MODEL do env
+  customPrompt           String? // instruções adicionais da clínica, somadas ao basePrompt fixo
+  temperature            Float?  // 0–2; null = usa padrão do env/código
+  maxTokens              Int?    // null = usa OPENAI_MAX_TOKENS do env
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_ai_configs")
+}
+
+model TenantWhatsappConfig {
+  id                    String            @id @default(uuid())
+  tenantId              String            @unique
+  accessTokenEncrypted  String? // nunca em texto puro — ver utils/encryption.js
+  businessAccountId     String?
+  displayName           String? // nome da conta/número exibido na tela
+  connectionStatus      ConnectionStatus  @default(NOT_CONNECTED)
+  webhookVerified       Boolean           @default(false)
+  connectedAt           DateTime?
+  lastSync              DateTime?
+  lastError             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_whatsapp_configs")
+}
+
+// Fuso horário e parâmetros de agenda. Horário de atendimento por dia
+// vive em TenantBusinessHour (tabela própria, não JSON) — ver abaixo.
+model TenantScheduleConfig {
+  id                            String   @id @default(uuid())
+  tenantId                      String   @unique
+  timezone                      String   @default("America/Sao_Paulo")
+  defaultAppointmentDurationMin Int      @default(30)
+  bufferBetweenAppointmentsMin  Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_schedule_configs")
+}
+
+// Uma linha por dia da semana — permite validação, consultas SQL diretas
+// (ex.: "tenants abertos aos sábados") e integração futura com Google
+// Calendar/Dental Office sem parsing de JSON.
+model TenantBusinessHour {
+  id         String    @id @default(uuid())
+  tenantId   String
+  dayOfWeek  DayOfWeek
+  enabled    Boolean   @default(true)
+  startTime  String? // "HH:MM"
+  endTime    String? // "HH:MM"
+  lunchStart String? // "HH:MM", opcional
+  lunchEnd   String? // "HH:MM", opcional
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, dayOfWeek])
+  @@index([tenantId])
+  @@map("tenant_business_hours")
+}
+
+// Uma linha por provedor conectado — mesmo formato serve Google Calendar,
+// Dental Office e futuros provedores (Mercado Pago, Stripe etc.), sem
+// migration nova a cada integração.
+model TenantIntegration {
+  id                    String              @id @default(uuid())
+  tenantId              String
+  provider              IntegrationProvider
+  providerVersion       String? // versão da API do provedor, facilita futuras migrações
+  status                ConnectionStatus    @default(NOT_CONNECTED)
+  credentialsEncrypted  Json? // blob criptografado — nunca texto puro
+  metadata              Json? // dados não sensíveis (ex.: calendarId, clinicId, lastSyncAt)
+  connectedAt           DateTime?
+  lastError             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, provider])
+  @@index([tenantId])
+  @@map("tenant_integrations")
+}
+
+// Trilha de auditoria de alterações em configurações do tenant.
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  action    String // ex.: "UPDATE_AI_CONFIG"
+  resource  String // ex.: "TenantAiConfig"
+  oldValue  Json? // nunca contém segredo em texto puro — ver auditLogService
+  newValue  Json?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, resource])
+  @@map("audit_logs")
 }
 
 // Conta da equipe da plataforma (Recepção IA), fora do escopo de qualquer Tenant.

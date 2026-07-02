@@ -1,5 +1,6 @@
 const messageRepository = require('../repositories/messageRepository');
 const whatsappClient    = require('../integrations/meta/whatsappClient');
+const tenantWhatsappConfigService = require('./tenantWhatsappConfigService');
 const AppError          = require('../utils/AppError');
 const logger            = require('../utils/logger');
 
@@ -56,11 +57,13 @@ async function sendDraft(messageId, tenantId) {
       };
       logger.info('[send] WHATSAPP_DRY_RUN ativo — Meta API não foi chamada', { messageId });
     } else {
+      const { token } = await tenantWhatsappConfigService.getEffectiveConfig(tenantId);
       metaResponse = await whatsappClient.sendMessage({
         phoneNumberId: whatsappPhoneNumberId,
         to,
         type: 'text',
         text: { body: message.content },
+        token,
       });
     }
 

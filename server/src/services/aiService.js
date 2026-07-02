@@ -1,7 +1,23 @@
 const messageRepository = require('../repositories/messageRepository');
 const openAiClient = require('../integrations/openai/openAiClient');
+const tenantAiConfigService = require('./tenantAiConfigService');
 
 const HISTORY_LIMIT = parseInt(process.env.OPENAI_HISTORY_LIMIT || '10', 10);
+
+// Regras fixas do produto — nunca editáveis pelo cliente. O "customPrompt" de
+// cada tenant (TenantAiConfig) é sempre somado a estas regras, nunca as
+// substitui. Exportado para exibição somente-leitura na tela de Configurações.
+const FIXED_RULES = [
+  'Responda sempre em português brasileiro, de forma cordial e objetiva.',
+  'Máximo 3 parágrafos curtos. Prefira 1 ou 2 parágrafos.',
+  'Não invente preços, horários ou procedimentos específicos não fornecidos.',
+  'Se não souber responder, diga que vai verificar e retornar em breve.',
+  'Nunca afirme ser humano se questionado diretamente.',
+  'Nunca mencione dados de outros clientes.',
+  'Se o lead demonstrar interesse, sugira agendar uma consulta ou visita.',
+];
+
+const BASE_PROMPT_TEXT = FIXED_RULES.map((rule, i) => `${i + 1}. ${rule}`).join('\n');
 
 function buildSystemPrompt(tenant, lead) {
   const lines = [
@@ -15,23 +31,18 @@ function buildSystemPrompt(tenant, lead) {
   ];
   if (lead.company) lines.push(`- Empresa: ${lead.company}`);
   if (lead.segment) lines.push(`- Segmento: ${lead.segment}`);
-  lines.push(
-    ``,
-    `Regras obrigatórias:`,
-    `1. Responda sempre em português brasileiro, de forma cordial e objetiva.`,
-    `2. Máximo 3 parágrafos curtos. Prefira 1 ou 2 parágrafos.`,
-    `3. Não invente preços, horários ou procedimentos específicos não fornecidos.`,
-    `4. Se não souber responder, diga que vai verificar e retornar em breve.`,
-    `5. Nunca afirme ser humano se questionado diretamente.`,
-    `6. Nunca mencione dados de outros clientes.`,
-    `7. Se o lead demonstrar interesse, sugira agendar uma consulta ou visita.`,
-  );
+  lines.push(``, `Regras obrigatórias:`, BASE_PROMPT_TEXT);
   return lines.join('\n');
 }
 
 async function generateReply({ tenant, lead, conversation, inboundText }) {
   const isDryRun = process.env.OPENAI_DRY_RUN === 'true';
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const aiConfig = await tenantAiConfigService.getEffectiveConfig(tenant.id);
+
+  const basePrompt = buildSystemPrompt(tenant, lead);
+  const systemPrompt = aiConfig.customPrompt
+    ? `${basePrompt}\n\nInstruções adicionais definidas pela clínica:\n${aiConfig.customPrompt}`
+    : basePrompt;
 
   // Histórico recente (inclui o INBOUND recém-salvo como último item)
   const history = await messageRepository.getRecentByConversation(
@@ -43,7 +54,7 @@ async function generateReply({ tenant, lead, conversation, inboundText }) {
   const priorHistory = history.slice(0, -1);
 
   const chatMessages = [
-    { role: 'system', content: buildSystemPrompt(tenant, lead) },
+    { role: 'system', content: systemPrompt },
     ...priorHistory.map(m => ({
       role: m.direction === 'INBOUND' ? 'user' : 'assistant',
       content: m.content,
@@ -57,8 +68,10 @@ async function generateReply({ tenant, lead, conversation, inboundText }) {
   } else {
     reply = await openAiClient.complete({
       messages: chatMessages,
-      model,
-      maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || '300', 10),
+      model: aiConfig.model,
+      maxTokens: aiConfig.maxTokens,
+      temperature: aiConfig.temperature,
+      apiKey: aiConfig.apiKey,
     });
   }
 
@@ -73,7 +86,7 @@ async function generateReply({ tenant, lead, conversation, inboundText }) {
     wamid: null,
     sentAt: null,
     metadata: {
-      model: isDryRun ? 'dry-run' : model,
+      model: isDryRun ? 'dry-run' : aiConfig.model,
       generatedAt: new Date().toISOString(),
     },
   });
@@ -81,4 +94,4 @@ async function generateReply({ tenant, lead, conversation, inboundText }) {
   console.info(`[ai] rascunho gerado — lead: ${lead.id}, conv: ${conversation.id}`);
 }
 
-module.exports = { generateReply, buildSystemPrompt };
+module.exports = { generateReply, buildSystemPrompt, BASE_PROMPT_TEXT };

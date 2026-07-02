@@ -1,9 +1,11 @@
 jest.mock('../repositories/messageRepository');
 jest.mock('../integrations/meta/whatsappClient');
+jest.mock('../services/tenantWhatsappConfigService');
 jest.mock('../utils/logger');
 
 const messageRepo    = require('../repositories/messageRepository');
 const whatsappClient = require('../integrations/meta/whatsappClient');
+const tenantWhatsappConfigService = require('../services/tenantWhatsappConfigService');
 const { sendDraft }  = require('../services/messageSendService');
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -42,6 +44,7 @@ function setupSuccess() {
 beforeEach(() => {
   jest.clearAllMocks();
   messageRepo.markFailed.mockResolvedValue({ id: DRAFT_MESSAGE.id, status: 'FAILED' });
+  tenantWhatsappConfigService.getEffectiveConfig.mockResolvedValue({ token: 'token-resolvido-do-tenant' });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,6 +75,17 @@ describe('sendDraft — sucesso', () => {
 
     expect(whatsappClient.sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({ phoneNumberId: 'phone-id-123' }),
+    );
+  });
+
+  it('passa o token resolvido via tenantWhatsappConfigService (chave do tenant ou fallback do env)', async () => {
+    setupSuccess();
+
+    await sendDraft(DRAFT_MESSAGE.id, TENANT_ID);
+
+    expect(tenantWhatsappConfigService.getEffectiveConfig).toHaveBeenCalledWith(TENANT_ID);
+    expect(whatsappClient.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ token: 'token-resolvido-do-tenant' }),
     );
   });
 

@@ -41,18 +41,19 @@ function buildPayload({ to, type, text, image, document, audio, template }) {
  * @param {object} [params.document]     - (futuro)
  * @param {object} [params.audio]        - (futuro)
  * @param {object} [params.template]     - (futuro)
+ * @param {string} [params.token]        - Token de acesso do tenant; cai para WHATSAPP_TOKEN se ausente
  * @returns {Promise<object>} Resposta bruta da API da Meta
  */
-async function sendMessage({ phoneNumberId, to, type = 'text', text, image, document, audio, template }) {
-  const token = process.env.WHATSAPP_TOKEN;
-  if (!token) throw new Error('WHATSAPP_TOKEN não configurado');
+async function sendMessage({ phoneNumberId, to, type = 'text', text, image, document, audio, template, token }) {
+  const accessToken = token || process.env.WHATSAPP_TOKEN;
+  if (!accessToken) throw new Error('WHATSAPP_TOKEN não configurado');
 
   const payload = buildPayload({ to, type, text, image, document, audio, template });
 
   const response = await fetch(`${GRAPH_API_URL}/${phoneNumberId}/messages`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
