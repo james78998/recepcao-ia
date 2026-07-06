@@ -596,5 +596,16 @@ Nunca altere textos, labels, títulos, botões ou conteúdo da interface sem sol
 
 Ao implementar uma funcionalidade, limite as alterações apenas aos arquivos autorizados.
 
+# Idioma
 
+Todas as respostas ao usuário devem ser em português do Brasil.
+
+Toda documentação, comentários de código, mensagens explicativas, propostas técnicas e relatórios devem ser escritos em português.
+
+Nunca responder em inglês, exceto:
+- código-fonte;
+- nomes de bibliotecas;
+- comandos de terminal;
+- APIs;
+- mensagens nativas do sistema/CLI.
 
