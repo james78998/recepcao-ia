@@ -87,6 +87,10 @@ async function markFailed(id, metadata) {
   });
 }
 
+async function countByTenant(tenantId) {
+  return prisma.message.count({ where: { tenantId } });
+}
+
 async function findByLeadId(leadId, tenantId) {
   return prisma.message.findMany({
     where: { leadId, tenantId },
@@ -114,5 +118,6 @@ module.exports = {
   markInFlight,
   markSent,
   markFailed,
+  countByTenant,
   findByLeadId,
 };

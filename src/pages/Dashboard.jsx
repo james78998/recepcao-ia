@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
@@ -5,25 +6,39 @@ import StatCard from "../components/StatCard";
 import Badge from "../components/Badge";
 import { useAuth } from "../hooks/useAuth";
 import { useLeads } from "../hooks/useLeads";
+import { getMessagesCount } from "../services/messagesService";
 import { getStatusColor } from "../utils/getStatusColor";
 import { STATUS_LABEL } from "../utils/leadUtils";
 
 function Dashboard() {
   const { user } = useAuth();
   const { leads, meta, loading } = useLeads({ perPage: 3 });
+  const [messagesTotal, setMessagesTotal] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMessagesCount()
+      .then((result) => { if (!cancelled) setMessagesTotal(result.total); })
+      .catch(() => { if (!cancelled) setMessagesTotal(null); });
+    return () => { cancelled = true; };
+  }, []);
 
   const firstName = user?.name?.split(' ')[0] ?? '';
   const greeting = firstName ? `Bem-vindo, ${firstName}!` : 'Bem-vindo ao painel da Recepção IA.';
+  const aiEnabled = user?.tenant?.aiEnabled ?? false;
 
   return (
     <Layout active="dashboard">
       <PageTitle title="Dashboard" subtitle={greeting} />
 
-      <div className="grid md:grid-cols-4 gap-6 mb-10">
+      <div className="grid md:grid-cols-3 gap-6 mb-10">
         <StatCard title="Total de leads" value={loading ? '—' : (meta?.total ?? 0)} />
-        <StatCard title="Mensagens" value="—" />
-        <StatCard title="Agendamentos" value="—" />
-        <StatCard title="Status da IA" value="ONLINE" color="text-green-600" />
+        <StatCard title="Mensagens" value={messagesTotal ?? '—'} />
+        <StatCard
+          title="Status da IA"
+          value={aiEnabled ? "Ativa" : "Inativa"}
+          color={aiEnabled ? "text-green-600" : "text-slate-500"}
+        />
       </div>
 
       <div className="bg-white rounded-2xl shadow p-6">

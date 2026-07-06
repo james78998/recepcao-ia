@@ -6,6 +6,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
+router.get('/count', messagesController.count);
 router.post('/:id/send', messagesController.send);
 
 module.exports = router;
