@@ -4,6 +4,10 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const router = require('./routes');
 const errorHandler = require('./middlewares/errorHandler');
+// Side-effect: registra os listeners do Motor de Automações em domainEvents,
+// uma única vez, no boot do processo — nenhum service de negócio depende
+// deste módulo diretamente.
+require('./services/automationDispatchService');
 
 const app = express();
 

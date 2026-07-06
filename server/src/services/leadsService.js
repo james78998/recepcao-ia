@@ -1,5 +1,7 @@
 const leadRepository = require('../repositories/leadRepository');
 const { normalizePhone } = require('../utils/phoneUtils');
+const domainEvents = require('../utils/domainEvents');
+const { AUTOMATION_EVENT_NAMES } = require('../constants/automation');
 
 function notFound() {
   const err = new Error('Lead não encontrado.');
@@ -24,11 +26,13 @@ async function getById(id, tenantId) {
 }
 
 async function create(tenantId, data) {
-  return leadRepository.create({
+  const lead = await leadRepository.create({
     ...data,
     tenantId,
     phoneNormalized: normalizePhone(data.phone),
   });
+  domainEvents.emit(AUTOMATION_EVENT_NAMES.LEAD_CREATED, { tenantId, data: lead });
+  return lead;
 }
 
 async function update(id, tenantId, data) {
@@ -37,7 +41,9 @@ async function update(id, tenantId, data) {
   if (data.phone !== undefined) {
     payload.phoneNormalized = normalizePhone(data.phone);
   }
-  return leadRepository.update(id, payload);
+  const lead = await leadRepository.update(id, payload);
+  domainEvents.emit(AUTOMATION_EVENT_NAMES.LEAD_UPDATED, { tenantId, data: lead });
+  return lead;
 }
 
 async function remove(id, tenantId) {

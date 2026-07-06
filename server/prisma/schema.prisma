@@ -69,6 +69,23 @@ enum DayOfWeek {
   SUN
 }
 
+// Eventos de domínio que o Motor de Automações pode disparar para webhooks
+// externos (n8n, Zapier, Make, Power Automate, Google Apps Script, ERPs,
+// Dental Office ou qualquer outro consumidor HTTP). APPOINTMENT_CREATED e
+// PAYMENT_PAID ainda não têm emissor no código (reservados para as Fases 3/4
+// do roadmap), mas já existem aqui para o tenant poder configurar o webhook
+// com antecedência.
+enum AutomationEvent {
+  LEAD_CREATED
+  LEAD_UPDATED
+  CONVERSATION_CREATED
+  MESSAGE_RECEIVED
+  MESSAGE_SENT
+  APPOINTMENT_CREATED
+  PAYMENT_PAID
+  AUTOMATION_TEST // reservado ao endpoint de teste manual — nunca oferecido para assinatura pelo tenant
+}
+
 // ─── Modelos ──────────────────────────────────────────────────────────────────
 
 model Tenant {
@@ -94,6 +111,8 @@ model Tenant {
   businessHours     TenantBusinessHour[]
   integrations      TenantIntegration[]
   auditLogs         AuditLog[]
+  automationWebhooks AutomationWebhook[]
+  automationDispatchLogs AutomationDispatchLog[]
 
   @@map("tenants")
 }
@@ -200,6 +219,68 @@ model TenantIntegration {
   @@unique([tenantId, provider])
   @@index([tenantId])
   @@map("tenant_integrations")
+}
+
+// Motor de Automações — um webhook de saída por linha. Cada tenant pode
+// cadastrar N webhooks, cada um escutando um subconjunto de AutomationEvent.
+// O consumidor do webhook é agnóstico (n8n, Zapier, Make, Power Automate,
+// Google Apps Script, ERP próprio, Dental Office etc.) — a plataforma só
+// conhece a URL e assina o payload em HMAC com o secret gerado aqui.
+// Exclusão é sempre soft delete (deletedAt) para preservar histórico de
+// auditoria e permitir recuperação; nunca DELETE físico.
+model AutomationWebhook {
+  id                String            @id @default(uuid())
+  tenantId          String
+  name              String // rótulo livre definido pelo tenant (ex.: "n8n — Qualificação")
+  url               String
+  signingSecretEnc  String // HMAC secret gerado pelo sistema — nunca texto puro, ver utils/encryption.js
+  enabled           Boolean           @default(true)
+  events            AutomationEvent[] @default([])
+  lastError         String?
+  lastSuccessAt     DateTime?
+  deletedAt         DateTime? // soft delete — nunca excluído fisicamente
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  logs   AutomationDispatchLog[]
+
+  @@index([tenantId])
+  @@index([tenantId, deletedAt])
+  @@map("automation_webhooks")
+}
+
+// Uma linha por tentativa de entrega — o histórico completo de retries fica
+// visível (não sobrescreve). deliveryId identifica uma entrega a UM webhook
+// específico (compartilhado pelas até 3 tentativas dessa entrega); eventId
+// identifica o evento de domínio de origem (compartilhado entre todos os
+// webhooks que o receberam no mesmo fan-out). errorType classifica a falha
+// para permitir agregações de métricas/dashboards sem parsear errorMessage.
+model AutomationDispatchLog {
+  id           String           @id @default(uuid())
+  tenantId     String
+  webhookId    String
+  event        AutomationEvent
+  eventId      String
+  deliveryId   String
+  urlSnapshot  String
+  payload      Json
+  httpStatus   Int?
+  success      Boolean          @default(false)
+  errorType    String? // TIMEOUT | NETWORK_ERROR | HTTP_ERROR | PAYLOAD_TOO_LARGE | BLOCKED_URL
+  errorMessage String?
+  attempt      Int              @default(1)
+  durationMs   Int?
+  createdAt    DateTime         @default(now())
+
+  tenant  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  webhook AutomationWebhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([webhookId, createdAt])
+  @@index([deliveryId])
+  @@map("automation_dispatch_logs")
 }
 
 // Trilha de auditoria de alterações em configurações do tenant.

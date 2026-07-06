@@ -4,12 +4,14 @@ jest.mock('../repositories/leadRepository');
 jest.mock('../repositories/conversationRepository');
 jest.mock('../repositories/messageRepository');
 jest.mock('../services/aiService');
+jest.mock('../utils/domainEvents');
 
 const tenantRepo = require('../repositories/tenantRepository');
 const leadRepo   = require('../repositories/leadRepository');
 const convRepo   = require('../repositories/conversationRepository');
 const msgRepo    = require('../repositories/messageRepository');
 const aiService  = require('../services/aiService');
+const domainEvents = require('../utils/domainEvents');
 
 const {
   processInbound,
@@ -106,6 +108,23 @@ describe('findOrCreateLead', () => {
       expect.objectContaining({ name: '5511999990001' })
     );
   });
+
+  it('emite lead.created ao criar um novo lead', async () => {
+    leadRepo.findByPhoneNormalized.mockResolvedValue(null);
+    leadRepo.create.mockResolvedValue(LEAD);
+
+    await findOrCreateLead('tenant-uuid-1', '5511999990001');
+
+    expect(domainEvents.emit).toHaveBeenCalledWith('lead.created', { tenantId: 'tenant-uuid-1', data: LEAD });
+  });
+
+  it('não emite lead.created quando o lead já existia', async () => {
+    leadRepo.findByPhoneNormalized.mockResolvedValue(LEAD);
+
+    await findOrCreateLead('tenant-uuid-1', '5511999990001');
+
+    expect(domainEvents.emit).not.toHaveBeenCalled();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -147,6 +166,23 @@ describe('findOrOpenConversation', () => {
       expect.objectContaining({ tenantId: 'tenant-uuid-1' })
     );
   });
+
+  it('emite conversation.created ao abrir uma nova conversa', async () => {
+    convRepo.findOpenByLead.mockResolvedValue(null);
+    convRepo.create.mockResolvedValue(CONV);
+
+    await findOrOpenConversation('tenant-uuid-1', 'lead-uuid-1');
+
+    expect(domainEvents.emit).toHaveBeenCalledWith('conversation.created', { tenantId: 'tenant-uuid-1', data: CONV });
+  });
+
+  it('não emite conversation.created quando reutiliza conversa existente', async () => {
+    convRepo.findOpenByLead.mockResolvedValue(CONV);
+
+    await findOrOpenConversation('tenant-uuid-1', 'lead-uuid-1');
+
+    expect(domainEvents.emit).not.toHaveBeenCalled();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -172,6 +208,29 @@ describe('processInbound — idempotência por wamid', () => {
     await processInbound(makeEntry('wamid.novo', '5511999990001', 'Primeira mensagem'));
 
     expect(msgRepo.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('emite message.received ao registrar uma mensagem nova', async () => {
+    tenantRepo.findByWhatsappPhoneNumberId.mockResolvedValue(TENANT);
+    leadRepo.findByPhoneNormalized.mockResolvedValue(LEAD);
+    convRepo.findOpenByLead.mockResolvedValue(CONV);
+    msgRepo.existsByWamid.mockResolvedValue(false);
+    msgRepo.create.mockResolvedValue(MSG);
+
+    await processInbound(makeEntry('wamid.evento', '5511999990001', 'Primeira mensagem'));
+
+    expect(domainEvents.emit).toHaveBeenCalledWith('message.received', { tenantId: TENANT.id, data: MSG });
+  });
+
+  it('não emite message.received quando o wamid já existe (idempotência)', async () => {
+    tenantRepo.findByWhatsappPhoneNumberId.mockResolvedValue(TENANT);
+    leadRepo.findByPhoneNormalized.mockResolvedValue(LEAD);
+    convRepo.findOpenByLead.mockResolvedValue(CONV);
+    msgRepo.existsByWamid.mockResolvedValue(true);
+
+    await processInbound(makeEntry('wamid.duplicado2', '5511999990001', 'Repetida'));
+
+    expect(domainEvents.emit).not.toHaveBeenCalledWith('message.received', expect.anything());
   });
 });
 

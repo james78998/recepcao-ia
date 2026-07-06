@@ -2,10 +2,12 @@ jest.mock('../repositories/messageRepository');
 jest.mock('../integrations/meta/whatsappClient');
 jest.mock('../services/tenantWhatsappConfigService');
 jest.mock('../utils/logger');
+jest.mock('../utils/domainEvents');
 
 const messageRepo    = require('../repositories/messageRepository');
 const whatsappClient = require('../integrations/meta/whatsappClient');
 const tenantWhatsappConfigService = require('../services/tenantWhatsappConfigService');
+const domainEvents   = require('../utils/domainEvents');
 const { sendDraft }  = require('../services/messageSendService');
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -109,6 +111,14 @@ describe('sendDraft — sucesso', () => {
     const inFlightOrder = messageRepo.markInFlight.mock.invocationCallOrder[0];
     const sendOrder     = whatsappClient.sendMessage.mock.invocationCallOrder[0];
     expect(inFlightOrder).toBeLessThan(sendOrder);
+  });
+
+  it('emite message.sent com a mensagem confirmada como SENT', async () => {
+    setupSuccess();
+
+    await sendDraft(DRAFT_MESSAGE.id, TENANT_ID);
+
+    expect(domainEvents.emit).toHaveBeenCalledWith('message.sent', { tenantId: TENANT_ID, data: SENT_MESSAGE });
   });
 });
 
@@ -228,6 +238,17 @@ describe('sendDraft — erros de envio (pós-guarda)', () => {
     // Deve lançar o AppError 502, não o erro do markFailed
     await expect(sendDraft(DRAFT_MESSAGE.id, TENANT_ID))
       .rejects.toMatchObject({ status: 502 });
+  });
+
+  it('não emite message.sent quando o envio falha', async () => {
+    const metaError = Object.assign(new Error('Meta API 500'), { isMetaError: true, status: 500 });
+    messageRepo.findByIdWithRelations.mockResolvedValue(DRAFT_MESSAGE);
+    messageRepo.markInFlight.mockResolvedValue({ count: 1 });
+    whatsappClient.sendMessage.mockRejectedValue(metaError);
+
+    await expect(sendDraft(DRAFT_MESSAGE.id, TENANT_ID)).rejects.toMatchObject({ status: 502 });
+
+    expect(domainEvents.emit).not.toHaveBeenCalled();
   });
 });
 

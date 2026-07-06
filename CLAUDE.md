@@ -199,7 +199,7 @@ npm run deploy     # Publica /dist no GitHub Pages (gh-pages)
 | **OpenAI** | Motor de IA da recepção virtual (respostas, qualificação, triagem). |
 | **WhatsApp Business Cloud API** | Canal principal de atendimento. |
 | **Google Calendar** | Sincronização e agendamento de consultas. |
-| **n8n** | Orquestração de automações e webhooks entre os serviços. |
+| **Motor de Automações** | Módulo agnóstico de webhooks de saída por tenant (múltiplos webhooks, cada um assinado com HMAC próprio e inscrito num subconjunto de eventos de domínio: `lead.created`, `lead.updated`, `conversation.created`, `message.received`, `message.sent`, e futuramente `appointment.created`/`payment.paid`). Não depende de um consumidor específico — **n8n é apenas um exemplo** de destino possível, junto de Zapier, Make, Power Automate, Google Apps Script, APIs próprias, ERPs, Dental Office etc. Fase A (`AutomationWebhook`, CRUD, validação de SSRF, soft delete), Fase B (emissor de eventos de domínio via `domainEvents`, disparo/fan-out com `automationDispatchService`, HMAC por webhook, retries com backoff, `AutomationDispatchLog`) e Fase C (seção "Motor de Automações — Webhooks Personalizados" em `Configuracoes.jsx`: CRUD de webhooks, painel-resumo de 24h, teste manual, logs paginados com filtro Sucesso/Falha, exemplo de payload copiável) concluídas. |
 | **Mercado Pago** | Pagamentos e assinaturas (mercado BR). |
 | **Stripe** | Pagamentos e assinaturas (internacional). |
 | **Dental Office API** | Integração com software de gestão odontológica. |
@@ -417,6 +417,7 @@ Vocabulário oficial do produto — **use estes termos** no código e na comunic
 | **Plano (Plan)** | Pacote comercial de assinatura da plataforma. |
 | **Assinatura (Subscription)** | Vínculo de um Tenant a um Plano. |
 | **Insights** | Relatórios e métricas analíticas sobre Leads, atendimento e conversão. |
+| **Motor de Automações** | Módulo que dispara eventos de domínio (`lead.created`, `message.sent` etc.) como webhooks HTTP assinados para sistemas externos definidos pelo próprio Tenant. Agnóstico quanto ao consumidor (n8n é só um exemplo). |
 
 > Mantenha a nomenclatura de domínio em **português** quando voltada ao usuário; em entidades de banco/código, prefira os termos em inglês entre parênteses (ex.: `Lead`, `Appointment`).
 

@@ -7,11 +7,20 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import Toast from "../components/Toast";
 import Loading from "../components/Loading";
+import EmptyState from "../components/EmptyState";
 import ApiKeyInput from "../components/configuracoes/ApiKeyInput";
 import IntegrationStatusBadge from "../components/configuracoes/IntegrationStatusBadge";
 import BusinessHoursEditor from "../components/configuracoes/BusinessHoursEditor";
 import IntegrationCard from "../components/configuracoes/IntegrationCard";
+import AutomationWebhookCard from "../components/configuracoes/AutomationWebhookCard";
+import AutomationWebhookForm from "../components/configuracoes/AutomationWebhookForm";
+import AutomationSecretReveal from "../components/configuracoes/AutomationSecretReveal";
+import AutomationStatsPanel from "../components/configuracoes/AutomationStatsPanel";
 import { useTenantSettings } from "../hooks/useTenantSettings";
+import { useAutomationWebhooks } from "../hooks/useAutomationWebhooks";
+import { useAutomationStats } from "../hooks/useAutomationStats";
+import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
+import { EXAMPLE_AUTOMATION_PAYLOAD } from "../constants/automationEvents";
 
 function ProfileSection({ profile, saving, onSave, notify }) {
   const [form, setForm] = useState({
@@ -308,6 +317,182 @@ function IntegrationsSection({ integrations, savingSection, onConnect, onDisconn
   );
 }
 
+// Motor de Automações — webhooks personalizados (n8n, Zapier, Make, ERPs
+// próprios etc.), independente das "Integrações Oficiais" acima (Google
+// Calendar, Dental Office). Mantido como bloco isolado de ponta a ponta
+// (próprios hooks, próprio estado de formulário/segredo revelado) para que
+// futuras integrações oficiais (Google Sheets, API Pública etc.) só precisem
+// crescer dentro de IntegrationsSection, sem tocar nesta seção.
+function AutomationWebhooksSection() {
+  const { webhooks, loading, error, savingId, create, update, remove, regenerateSecret, test } =
+    useAutomationWebhooks();
+  const { stats, loading: statsLoading } = useAutomationStats();
+  const { copied, copy } = useCopyToClipboard();
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingWebhook, setEditingWebhook] = useState(null);
+  const [revealedSecret, setRevealedSecret] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  function notify(type, message) {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  function openCreateForm() {
+    setEditingWebhook(null);
+    setShowForm(true);
+  }
+
+  function openEditForm(webhook) {
+    setShowForm(false);
+    setEditingWebhook(webhook);
+  }
+
+  async function handleCreate(data) {
+    const result = await create(data);
+    if (result.success) {
+      setRevealedSecret(result.result.signingSecret);
+      setShowForm(false);
+      notify("success", "Webhook criado com sucesso!");
+    } else {
+      notify("error", result.message);
+    }
+  }
+
+  async function handleUpdate(data) {
+    const result = await update(editingWebhook.id, data);
+    if (result.success) {
+      setEditingWebhook(null);
+      notify("success", "Webhook atualizado com sucesso!");
+    } else {
+      notify("error", result.message);
+    }
+  }
+
+  async function handleDelete(webhook) {
+    const result = await remove(webhook.id);
+    notify(result.success ? "success" : "error", result.success ? "Webhook excluído." : result.message);
+  }
+
+  async function handleRegenerateSecret(webhook) {
+    const result = await regenerateSecret(webhook.id);
+    if (result.success) {
+      setRevealedSecret(result.result.signingSecret);
+      notify("success", "Secret regenerado com sucesso!");
+    } else {
+      notify("error", result.message);
+    }
+  }
+
+  async function handleTest(webhook) {
+    const result = await test(webhook.id);
+    if (!result.success) {
+      notify("error", result.message);
+      return;
+    }
+    const { success, httpStatus, errorMessage, durationMs } = result.result;
+    notify(
+      success ? "success" : "error",
+      success
+        ? `Teste bem-sucedido! HTTP ${httpStatus} em ${durationMs}ms`
+        : `Falha no teste: ${errorMessage} (HTTP ${httpStatus ?? "—"})`
+    );
+  }
+
+  if (loading) {
+    return (
+      <Card className="lg:col-span-2">
+        <p className="text-slate-500">Carregando automações...</p>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="lg:col-span-2">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="lg:col-span-2">
+      {toast && <Toast type={toast.type} message={toast.message} />}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h3 className="text-2xl font-bold text-blue-950">Motor de Automações — Webhooks Personalizados</h3>
+          <p className="text-sm text-slate-500 mt-1">
+            Conecte sistemas próprios (n8n, Zapier, Make, ERPs etc.) via webhooks assinados. Diferente das
+            integrações oficiais acima.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="button"
+            color="gray"
+            onClick={() => copy(JSON.stringify(EXAMPLE_AUTOMATION_PAYLOAD, null, 2))}
+          >
+            {copied ? "Copiado!" : "Copiar exemplo de payload JSON"}
+          </Button>
+          <Button type="button" color="green" onClick={openCreateForm}>
+            + Novo webhook
+          </Button>
+        </div>
+      </div>
+
+      <AutomationStatsPanel stats={stats} loading={statsLoading} />
+
+      {revealedSecret && (
+        <AutomationSecretReveal secret={revealedSecret} onClose={() => setRevealedSecret(null)} />
+      )}
+
+      {showForm && (
+        <Card className="mb-6">
+          <h4 className="text-lg font-bold text-blue-950 mb-4">Novo webhook</h4>
+          <AutomationWebhookForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} saving={savingId === "new"} />
+        </Card>
+      )}
+
+      {editingWebhook && (
+        <Card className="mb-6">
+          <h4 className="text-lg font-bold text-blue-950 mb-4">Editar webhook</h4>
+          <AutomationWebhookForm
+            initialValues={editingWebhook}
+            onSubmit={handleUpdate}
+            onCancel={() => setEditingWebhook(null)}
+            saving={savingId === editingWebhook.id}
+          />
+        </Card>
+      )}
+
+      {webhooks.length === 0 ? (
+        <EmptyState
+          title="Nenhum webhook cadastrado"
+          description="Cadastre um webhook para conectar o Motor de Automações a sistemas externos."
+          buttonText="+ Novo webhook"
+          onClick={openCreateForm}
+        />
+      ) : (
+        <div className="grid md:grid-cols-2 gap-6">
+          {webhooks.map((webhook) => (
+            <AutomationWebhookCard
+              key={webhook.id}
+              webhook={webhook}
+              onEdit={openEditForm}
+              onDelete={handleDelete}
+              onTest={handleTest}
+              onRegenerateSecret={handleRegenerateSecret}
+              busy={savingId === webhook.id}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Configuracoes() {
   const {
     settings,
@@ -381,6 +566,7 @@ function Configuracoes() {
           onDisconnect={disconnectIntegration}
           notify={notify}
         />
+        <AutomationWebhooksSection />
       </div>
     </Layout>
   );

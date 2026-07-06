@@ -7,6 +7,7 @@ const messagesRoutes      = require('./messages');
 const adminAuthRoutes     = require('./adminAuth');
 const adminTenantsRoutes  = require('./adminTenants');
 const tenantSettingsRoutes = require('./tenantSettings');
+const automationWebhooksRoutes = require('./automationWebhooks');
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/messages',      messagesRoutes);
 router.use('/admin/auth',    adminAuthRoutes);
 router.use('/admin/tenants', adminTenantsRoutes);
 router.use('/tenants/me',    tenantSettingsRoutes);
+router.use('/tenants/me/automations/webhooks', automationWebhooksRoutes);
 
 module.exports = router;

@@ -3,6 +3,8 @@ const whatsappClient    = require('../integrations/meta/whatsappClient');
 const tenantWhatsappConfigService = require('./tenantWhatsappConfigService');
 const AppError          = require('../utils/AppError');
 const logger            = require('../utils/logger');
+const domainEvents       = require('../utils/domainEvents');
+const { AUTOMATION_EVENT_NAMES } = require('../constants/automation');
 
 /**
  * Envia uma mensagem DRAFT ao cliente via WhatsApp Cloud API.
@@ -80,6 +82,8 @@ async function sendDraft(messageId, tenantId) {
       sentAt: new Date(),
       metadata: { metaResponse, waId },
     });
+
+    domainEvents.emit(AUTOMATION_EVENT_NAMES.MESSAGE_SENT, { tenantId, data: updated });
 
     logger.info('[send] mensagem enviada', { messageId, wamid });
     return updated;

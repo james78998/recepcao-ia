@@ -4,6 +4,8 @@ const conversationRepository = require('../repositories/conversationRepository')
 const messageRepository = require('../repositories/messageRepository');
 const { normalizePhone } = require('../utils/phoneUtils');
 const aiService = require('./aiService');
+const domainEvents = require('../utils/domainEvents');
+const { AUTOMATION_EVENT_NAMES } = require('../constants/automation');
 
 /**
  * Encontra o Lead pelo número normalizado ou cria um novo com source=WHATSAPP.
@@ -20,6 +22,7 @@ async function findOrCreateLead(tenantId, phoneNormalized) {
       status: 'NOVO',
     });
     console.info(`[webhook] novo lead criado via WhatsApp: ${lead.id} (${phoneNormalized})`);
+    domainEvents.emit(AUTOMATION_EVENT_NAMES.LEAD_CREATED, { tenantId, data: lead });
   }
   return lead;
 }
@@ -36,6 +39,7 @@ async function findOrOpenConversation(tenantId, leadId) {
       channel: 'WHATSAPP',
       status: 'OPEN',
     });
+    domainEvents.emit(AUTOMATION_EVENT_NAMES.CONVERSATION_CREATED, { tenantId, data: conversation });
   }
   return conversation;
 }
@@ -91,7 +95,7 @@ async function processInbound(entry) {
       const conversation = await findOrOpenConversation(tenant.id, lead.id);
 
       // 5. Persiste a mensagem INBOUND
-      await messageRepository.create({
+      const message = await messageRepository.create({
         tenantId: tenant.id,
         conversationId: conversation.id,
         leadId: lead.id,
@@ -102,6 +106,8 @@ async function processInbound(entry) {
         wamid,
         sentAt,
       });
+
+      domainEvents.emit(AUTOMATION_EVENT_NAMES.MESSAGE_RECEIVED, { tenantId: tenant.id, data: message });
 
       console.info(`[webhook] mensagem recebida — lead: ${lead.id}, wamid: ${wamid}`);
 
