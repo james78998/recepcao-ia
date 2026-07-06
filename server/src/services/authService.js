@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/userRepository');
 const tenantOnboardingService = require('./tenantOnboardingService');
 
+const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+
 function generateTokens(user) {
   const payload = { sub: user.id, tenantId: user.tenantId, role: user.role };
   const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -24,6 +26,7 @@ function formatUser(user) {
     tenant: {
       id: user.tenant.id,
       name: user.tenant.name,
+      aiEnabled: user.tenant.aiEnabled,
     },
   };
 }
@@ -91,4 +94,37 @@ async function me(userId) {
   return formatUser(user);
 }
 
-module.exports = { register, login, refresh, me };
+async function updateMe(userId, { name, email }) {
+  if (email) {
+    const existing = await userRepository.findByEmail(email);
+    if (existing && existing.id !== userId) {
+      const err = new Error('E-mail já cadastrado por outro usuário.');
+      err.status = 409;
+      throw err;
+    }
+  }
+
+  await userRepository.update(userId, { name, email });
+  return me(userId);
+}
+
+async function changePassword(userId, { currentPassword, newPassword }) {
+  const user = await userRepository.findById(userId);
+  if (!user) {
+    const err = new Error('Usuário não encontrado.');
+    err.status = 404;
+    throw err;
+  }
+
+  const passwordMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!passwordMatch) {
+    const err = new Error('Senha atual incorreta.');
+    err.status = 401;
+    throw err;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await userRepository.update(userId, { passwordHash });
+}
+
+module.exports = { register, login, refresh, me, updateMe, changePassword };

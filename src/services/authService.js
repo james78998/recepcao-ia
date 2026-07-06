@@ -26,6 +26,16 @@ export async function me() {
   return response.data;
 }
 
+export async function updateMe(data) {
+  const response = await api.patch('/auth/me', data);
+  return response.data;
+}
+
+export async function changePassword(data) {
+  const response = await api.post('/auth/change-password', data);
+  return response.data;
+}
+
 export async function logout() {
   await api.post('/auth/logout');
 }

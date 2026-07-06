@@ -48,8 +48,14 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const updateUser = useCallback(async (data) => {
+    const updated = await authService.updateMe(data);
+    setUser(updated);
+    return updated;
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

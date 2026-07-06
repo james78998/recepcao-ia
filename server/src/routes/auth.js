@@ -19,7 +19,19 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Senha obrigatória.'),
 });
 
+const updateMeSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.').optional(),
+  email: z.string().email('E-mail inválido.').optional(),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Senha atual obrigatória.'),
+  newPassword: z.string().min(8, 'Nova senha deve ter pelo menos 8 caracteres.'),
+});
+
 router.get('/me', authMiddleware, authController.me);
+router.patch('/me', authMiddleware, validate(updateMeSchema), authController.updateMe);
+router.post('/change-password', authMiddleware, validate(changePasswordSchema), authController.changePassword);
 router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', validate(loginSchema), authController.login);
 router.post('/refresh', authController.refresh);

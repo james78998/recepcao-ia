@@ -20,4 +20,8 @@ async function create(data, db = prisma) {
   return db.user.create({ data });
 }
 
-module.exports = { findByEmail, findByEmailWithTenant, findById, findByIdWithTenant, create };
+async function update(id, data, db = prisma) {
+  return db.user.update({ where: { id }, data });
+}
+
+module.exports = { findByEmail, findByEmailWithTenant, findById, findByIdWithTenant, create, update };

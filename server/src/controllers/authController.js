@@ -60,4 +60,22 @@ async function me(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout, me };
+async function updateMe(req, res, next) {
+  try {
+    const user = await authService.updateMe(req.user.id, req.body);
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function changePassword(req, res, next) {
+  try {
+    await authService.changePassword(req.user.id, req.body);
+    res.json({ message: 'Senha atualizada com sucesso.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, logout, me, updateMe, changePassword };
