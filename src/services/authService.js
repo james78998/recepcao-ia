@@ -39,3 +39,13 @@ export async function changePassword(data) {
 export async function logout() {
   await api.post('/auth/logout');
 }
+
+export async function forgotPassword(email) {
+  const response = await api.post('/auth/forgot-password', { email });
+  return response.data;
+}
+
+export async function resetPassword({ token, newPassword }) {
+  const response = await api.post('/auth/reset-password', { token, newPassword });
+  return response.data;
+}

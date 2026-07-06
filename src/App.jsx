@@ -6,6 +6,7 @@ import PublicRoute from "./components/PublicRoute";
 
 import Home from "./pages/Home";
 import RecuperarSenha from "./pages/RecuperarSenha";
+import RedefinirSenha from "./pages/RedefinirSenha";
 
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
@@ -37,6 +38,7 @@ function App() {
         {/* Rotas abertas */}
         <Route path="/" element={<Home />} />
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+        <Route path="/redefinir-senha" element={<RedefinirSenha />} />
 
         {/* Rotas públicas: redirecionam para /dashboard se já autenticado */}
         <Route element={<PublicRoute />}>

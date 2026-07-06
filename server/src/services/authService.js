@@ -1,9 +1,19 @@
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/userRepository');
+const passwordResetTokenRepository = require('../repositories/passwordResetTokenRepository');
 const tenantOnboardingService = require('./tenantOnboardingService');
+const emailService = require('./emailService');
+const domainEvents = require('../utils/domainEvents');
+const { AUTOMATION_EVENT_NAMES } = require('../constants/automation');
 
 const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+const RESET_TOKEN_EXPIRES_MIN = parseInt(process.env.PASSWORD_RESET_TOKEN_EXPIRES_MIN || '60', 10);
+
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 function generateTokens(user) {
   const payload = { sub: user.id, tenantId: user.tenantId, role: user.role };
@@ -127,4 +137,66 @@ async function changePassword(userId, { currentPassword, newPassword }) {
   await userRepository.update(userId, { passwordHash });
 }
 
-module.exports = { register, login, refresh, me, updateMe, changePassword };
+// Sempre "sucede" do ponto de vista do chamador (controller sempre responde
+// a mesma mensagem genérica) — nunca revela se o e-mail existe ou não.
+async function forgotPassword(email) {
+  const user = await userRepository.findByEmail(email);
+  if (!user) return;
+
+  await passwordResetTokenRepository.invalidateAllForUser(user.id);
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRES_MIN * 60 * 1000);
+
+  await passwordResetTokenRepository.create({
+    userId: user.id,
+    tokenHash: hashResetToken(token),
+    expiresAt,
+  });
+
+  // CORS_ORIGIN já é a origem pública do frontend — reaproveitado aqui para
+  // montar o link em vez de introduzir uma variável nova para o mesmo dado.
+  // CORS_ORIGIN pode ter várias origens separadas por vírgula (ver app.js);
+  // para o link usamos só a primeira, senão a URL sai quebrada.
+  const frontendOrigin = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',')[0].trim();
+  const resetLink = `${frontendOrigin}/#/redefinir-senha?token=${token}`;
+
+  // Fire-and-forget: não bloqueia a resposta no tempo de envio do e-mail
+  // (mesmo padrão de aiService.generateReply em whatsappService.js). Além de
+  // não travar o fluxo principal, evita que o tempo de resposta desta rota
+  // varie entre "e-mail existe" (envia e-mail) e "não existe" (retorna já) —
+  // essa diferença de latência seria um canal lateral de enumeração de e-mail.
+  emailService.sendPasswordResetEmail(user.email, resetLink);
+
+  domainEvents.emit(AUTOMATION_EVENT_NAMES.USER_PASSWORD_RESET_REQUESTED, {
+    tenantId: user.tenantId,
+    data: { id: user.id, name: user.name, email: user.email },
+  });
+}
+
+async function resetPassword(token, newPassword) {
+  const record = await passwordResetTokenRepository.findValidByHash(hashResetToken(token));
+  if (!record) {
+    const err = new Error('Token inválido ou expirado.');
+    err.status = 400;
+    throw err;
+  }
+
+  const user = await userRepository.findById(record.userId);
+  if (!user) {
+    const err = new Error('Token inválido ou expirado.');
+    err.status = 400;
+    throw err;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await userRepository.update(user.id, { passwordHash });
+  await passwordResetTokenRepository.invalidateAllForUser(user.id);
+
+  domainEvents.emit(AUTOMATION_EVENT_NAMES.USER_PASSWORD_RESET_COMPLETED, {
+    tenantId: user.tenantId,
+    data: { id: user.id, name: user.name, email: user.email },
+  });
+}
+
+module.exports = { register, login, refresh, me, updateMe, changePassword, forgotPassword, resetPassword };

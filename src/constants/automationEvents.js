@@ -10,6 +10,8 @@ export const AUTOMATION_EVENT_LABELS = {
   MESSAGE_SENT: "Mensagem enviada",
   APPOINTMENT_CREATED: "Agendamento criado",
   PAYMENT_PAID: "Pagamento confirmado",
+  USER_PASSWORD_RESET_REQUESTED: "Redefinição de senha solicitada",
+  USER_PASSWORD_RESET_COMPLETED: "Redefinição de senha concluída",
 };
 
 export const AUTOMATION_EVENT_OPTIONS = Object.entries(AUTOMATION_EVENT_LABELS).map(

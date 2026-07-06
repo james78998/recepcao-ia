@@ -78,4 +78,24 @@ async function changePassword(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout, me, updateMe, changePassword };
+const GENERIC_FORGOT_PASSWORD_MESSAGE = 'Se o e-mail existir em nossa base, enviaremos instruções de recuperação.';
+
+async function forgotPassword(req, res, next) {
+  try {
+    await authService.forgotPassword(req.body.email);
+    res.json({ message: GENERIC_FORGOT_PASSWORD_MESSAGE });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resetPassword(req, res, next) {
+  try {
+    await authService.resetPassword(req.body.token, req.body.newPassword);
+    res.json({ message: 'Senha redefinida com sucesso.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, logout, me, updateMe, changePassword, forgotPassword, resetPassword };

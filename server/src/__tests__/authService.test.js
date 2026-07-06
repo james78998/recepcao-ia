@@ -1,12 +1,18 @@
 jest.mock('bcrypt');
 jest.mock('jsonwebtoken');
 jest.mock('../repositories/userRepository');
+jest.mock('../repositories/passwordResetTokenRepository');
 jest.mock('../services/tenantOnboardingService');
+jest.mock('../services/emailService');
+jest.mock('../utils/domainEvents');
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/userRepository');
-const { login, me, updateMe, changePassword } = require('../services/authService');
+const passwordResetTokenRepository = require('../repositories/passwordResetTokenRepository');
+const emailService = require('../services/emailService');
+const domainEvents = require('../utils/domainEvents');
+const { login, me, updateMe, changePassword, forgotPassword, resetPassword } = require('../services/authService');
 
 const USER_WITH_TENANT = {
   id: 'user-1',
@@ -116,5 +122,76 @@ describe('authService.changePassword', () => {
     await expect(
       changePassword('id-inexistente', { currentPassword: 'x', newPassword: 'senhaNova123' })
     ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('authService.forgotPassword', () => {
+  it('gera token, envia e-mail e emite USER_PASSWORD_RESET_REQUESTED quando o e-mail existe', async () => {
+    userRepository.findByEmail.mockResolvedValue({ ...USER_WITH_TENANT });
+
+    await forgotPassword('admin@teste.com');
+
+    expect(passwordResetTokenRepository.invalidateAllForUser).toHaveBeenCalledWith('user-1');
+    expect(passwordResetTokenRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        tokenHash: expect.stringMatching(/^[0-9a-f]{64}$/), // SHA-256 hex — nunca o token em texto puro
+        expiresAt: expect.any(Date),
+      })
+    );
+    expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
+      'admin@teste.com',
+      expect.stringContaining('/redefinir-senha?token=')
+    );
+    expect(domainEvents.emit).toHaveBeenCalledWith('user.password_reset_requested', {
+      tenantId: 'tenant-1',
+      data: { id: 'user-1', name: 'Admin Teste', email: 'admin@teste.com' },
+    });
+  });
+
+  it('não lança, não envia e-mail e não emite evento quando o e-mail não existe (evita enumeração)', async () => {
+    userRepository.findByEmail.mockResolvedValue(null);
+
+    await expect(forgotPassword('naoexiste@teste.com')).resolves.toBeUndefined();
+
+    expect(passwordResetTokenRepository.create).not.toHaveBeenCalled();
+    expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
+    expect(domainEvents.emit).not.toHaveBeenCalled();
+  });
+});
+
+describe('authService.resetPassword', () => {
+  it('troca a senha, invalida os tokens e emite USER_PASSWORD_RESET_COMPLETED', async () => {
+    passwordResetTokenRepository.findValidByHash.mockResolvedValue({
+      id: 'reset-token-1',
+      userId: 'user-1',
+    });
+    userRepository.findById.mockResolvedValue({ ...USER_WITH_TENANT });
+    bcrypt.hash.mockResolvedValue('hash-novo');
+
+    await resetPassword('token-em-texto-puro', 'novaSenhaSegura123');
+
+    expect(userRepository.update).toHaveBeenCalledWith('user-1', { passwordHash: 'hash-novo' });
+    expect(passwordResetTokenRepository.invalidateAllForUser).toHaveBeenCalledWith('user-1');
+    expect(domainEvents.emit).toHaveBeenCalledWith('user.password_reset_completed', {
+      tenantId: 'tenant-1',
+      data: { id: 'user-1', name: 'Admin Teste', email: 'admin@teste.com' },
+    });
+  });
+
+  it('lança 400 quando o token não existe, expirou ou já foi usado', async () => {
+    passwordResetTokenRepository.findValidByHash.mockResolvedValue(null);
+
+    await expect(resetPassword('token-invalido', 'novaSenhaSegura123')).rejects.toMatchObject({ status: 400 });
+    expect(userRepository.update).not.toHaveBeenCalled();
+    expect(domainEvents.emit).not.toHaveBeenCalled();
+  });
+
+  it('lança 400 quando o token é válido mas o usuário não existe mais', async () => {
+    passwordResetTokenRepository.findValidByHash.mockResolvedValue({ id: 'reset-token-1', userId: 'user-removido' });
+    userRepository.findById.mockResolvedValue(null);
+
+    await expect(resetPassword('token-qualquer', 'novaSenhaSegura123')).rejects.toMatchObject({ status: 400 });
+    expect(userRepository.update).not.toHaveBeenCalled();
   });
 });

@@ -83,6 +83,8 @@ enum AutomationEvent {
   MESSAGE_SENT
   APPOINTMENT_CREATED
   PAYMENT_PAID
+  USER_PASSWORD_RESET_REQUESTED
+  USER_PASSWORD_RESET_COMPLETED
   AUTOMATION_TEST // reservado ao endpoint de teste manual — nunca oferecido para assinatura pelo tenant
 }
 
@@ -327,9 +329,28 @@ model User {
   updatedAt    DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  passwordResetTokens PasswordResetToken[]
 
   @@index([tenantId])
   @@map("users")
+}
+
+// Token de recuperação de senha — uma linha por pedido. tokenHash é SHA-256
+// do token enviado por e-mail (nunca o valor em texto puro, mesmo espírito de
+// AutomationWebhook.signingSecretEnc). Uso único: usedAt marcado no reset;
+// pedidos antigos são invalidados a cada novo pedido e após reset bem-sucedido.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Lead {

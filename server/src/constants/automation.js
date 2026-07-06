@@ -11,6 +11,8 @@ const AUTOMATION_EVENTS = [
   'MESSAGE_SENT',
   'APPOINTMENT_CREATED',
   'PAYMENT_PAID',
+  'USER_PASSWORD_RESET_REQUESTED',
+  'USER_PASSWORD_RESET_COMPLETED',
 ];
 
 // Nome "com ponto" enviado no campo `event` do envelope e no header
@@ -23,6 +25,8 @@ const AUTOMATION_EVENT_NAMES = {
   MESSAGE_SENT: 'message.sent',
   APPOINTMENT_CREATED: 'appointment.created',
   PAYMENT_PAID: 'payment.paid',
+  USER_PASSWORD_RESET_REQUESTED: 'user.password_reset_requested',
+  USER_PASSWORD_RESET_COMPLETED: 'user.password_reset_completed',
   AUTOMATION_TEST: 'automation.test',
 };
 
