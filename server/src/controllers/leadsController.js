@@ -20,6 +20,15 @@ async function getById(req, res, next) {
   }
 }
 
+async function getMessages(req, res, next) {
+  try {
+    const messages = await leadsService.getMessages(req.params.id, req.user.tenantId);
+    res.json(messages);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function create(req, res, next) {
   try {
     const lead = await leadsService.create(req.user.tenantId, req.body);
@@ -47,4 +56,4 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { list, getById, create, update, remove };
+module.exports = { list, getById, getMessages, create, update, remove };

@@ -5,9 +5,19 @@ import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import Loading from "../components/Loading";
 import Badge from "../components/Badge";
-import { getLeadById, updateLead, deleteLead } from "../services/leadsService";
+import { getLeadById, getLeadMessages, updateLead, deleteLead } from "../services/leadsService";
 import { getStatusColor } from "../utils/getStatusColor";
 import { STATUS_LABEL } from "../utils/leadUtils";
+
+function formatMessageTime(dateStr) {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function LeadDetails() {
   const { id } = useParams();
@@ -16,6 +26,9 @@ function LeadDetails() {
   const [lead, setLead] = useState(null);
   const [loadingLead, setLoadingLead] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  const [messages, setMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -27,6 +40,15 @@ function LeadDetails() {
       .then((data) => { if (!cancelled) setLead(data); })
       .catch((err) => { if (!cancelled && err?.response?.status === 404) setNotFound(true); })
       .finally(() => { if (!cancelled) setLoadingLead(false); });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLeadMessages(id)
+      .then((data) => { if (!cancelled) setMessages(data); })
+      .catch(() => { if (!cancelled) setMessages([]); })
+      .finally(() => { if (!cancelled) setLoadingMessages(false); });
     return () => { cancelled = true; };
   }, [id]);
 
@@ -98,14 +120,28 @@ function LeadDetails() {
             </h3>
 
             <div className="space-y-4">
-              <div className="bg-slate-100 p-4 rounded-xl">
-                <p className="font-bold">Cliente - 10:30</p>
-                <p>Olá, gostaria de automatizar o atendimento da minha clínica.</p>
-              </div>
-              <div className="bg-green-100 p-4 rounded-xl">
-                <p className="font-bold">Recepção IA - 10:31</p>
-                <p>Olá! Será um prazer ajudar. Qual é o nome da sua empresa e quantos atendimentos recebe por dia?</p>
-              </div>
+              {loadingMessages ? (
+                <div className="py-8 flex justify-center">
+                  <div className="w-6 h-6 border-4 border-blue-900 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : messages.length === 0 ? (
+                <p className="text-slate-400 text-sm">Nenhuma mensagem registrada ainda.</p>
+              ) : (
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`p-4 rounded-xl ${
+                      message.direction === "INBOUND" ? "bg-slate-100" : "bg-green-100"
+                    }`}
+                  >
+                    <p className="font-bold">
+                      {message.direction === "INBOUND" ? lead.name : "Recepção IA"} —{" "}
+                      {formatMessageTime(message.sentAt || message.createdAt)}
+                    </p>
+                    <p>{message.content}</p>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
@@ -128,7 +164,10 @@ function LeadDetails() {
             </div>
 
             <div className="mt-8 space-y-3">
-              <button className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold">
+              <button
+                onClick={() => navigate(`/whatsapp?leadId=${id}`)}
+                className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold"
+              >
                 Enviar WhatsApp
               </button>
 

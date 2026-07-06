@@ -10,6 +10,11 @@ export async function getLeadById(id) {
   return response.data;
 }
 
+export async function getLeadMessages(id) {
+  const response = await api.get(`/leads/${id}/messages`);
+  return response.data;
+}
+
 export async function createLead(data) {
   const response = await api.post("/leads", data);
   return response.data;

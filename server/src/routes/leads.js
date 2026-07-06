@@ -25,6 +25,7 @@ router.use(authMiddleware);
 
 router.get('/', leadsController.list);
 router.get('/:id', leadsController.getById);
+router.get('/:id/messages', leadsController.getMessages);
 router.post('/', validate(createSchema), leadsController.create);
 router.put('/:id', validate(updateSchema), leadsController.update);
 router.delete('/:id', leadsController.remove);

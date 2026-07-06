@@ -87,6 +87,24 @@ async function markFailed(id, metadata) {
   });
 }
 
+async function findByLeadId(leadId, tenantId) {
+  return prisma.message.findMany({
+    where: { leadId, tenantId },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      direction: true,
+      status: true,
+      aiGenerated: true,
+      content: true,
+      wamid: true,
+      sentAt: true,
+      createdAt: true,
+      conversationId: true,
+    },
+  });
+}
+
 module.exports = {
   existsByWamid,
   create,
@@ -96,4 +114,5 @@ module.exports = {
   markInFlight,
   markSent,
   markFailed,
+  findByLeadId,
 };

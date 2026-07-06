@@ -1,4 +1,5 @@
 const leadRepository = require('../repositories/leadRepository');
+const messageRepository = require('../repositories/messageRepository');
 const { normalizePhone } = require('../utils/phoneUtils');
 const domainEvents = require('../utils/domainEvents');
 const { AUTOMATION_EVENT_NAMES } = require('../constants/automation');
@@ -51,4 +52,9 @@ async function remove(id, tenantId) {
   return leadRepository.remove(id);
 }
 
-module.exports = { list, getById, create, update, remove };
+async function getMessages(id, tenantId) {
+  await getById(id, tenantId);
+  return messageRepository.findByLeadId(id, tenantId);
+}
+
+module.exports = { list, getById, create, update, remove, getMessages };

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import Layout from "../components/Layout";
 import Badge from "../components/Badge";
 import EmptyState from "../components/EmptyState";
@@ -91,6 +92,8 @@ function MessageBubble({ message }) {
 }
 
 function WhatsApp() {
+  const [searchParams]                    = useSearchParams();
+  const leadIdParam                       = searchParams.get("leadId");
   const [conversations, setConversations] = useState([]);
   const [selectedId, setSelectedId]       = useState(null);
   const [selectedConv, setSelectedConv]   = useState(null);
@@ -131,6 +134,14 @@ function WhatsApp() {
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  // Auto-seleciona a conversa do lead vindo de LeadDetails ("Enviar WhatsApp"),
+  // sem sobrescrever uma seleção manual já feita pelo usuário.
+  useEffect(() => {
+    if (!leadIdParam || selectedId || conversations.length === 0) return;
+    const match = conversations.find((c) => c.lead?.id === leadIdParam);
+    if (match) setSelectedId(match.id);
+  }, [leadIdParam, conversations, selectedId]);
 
   useEffect(() => {
     if (!selectedId) return;
