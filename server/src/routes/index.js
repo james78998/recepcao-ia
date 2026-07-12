@@ -8,6 +8,7 @@ const adminAuthRoutes     = require('./adminAuth');
 const adminTenantsRoutes  = require('./adminTenants');
 const tenantSettingsRoutes = require('./tenantSettings');
 const automationWebhooksRoutes = require('./automationWebhooks');
+const appointmentsRoutes = require('./appointments');
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/admin/auth',    adminAuthRoutes);
 router.use('/admin/tenants', adminTenantsRoutes);
 router.use('/tenants/me',    tenantSettingsRoutes);
 router.use('/tenants/me/automations/webhooks', automationWebhooksRoutes);
+router.use('/appointments', appointmentsRoutes);
 
 module.exports = router;

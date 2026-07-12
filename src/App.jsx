@@ -20,6 +20,8 @@ import EditarLead from "./pages/EditarLead";
 import Insights from "./pages/Insights";
 import WhatsApp from "./pages/WhatsApp";
 import Agenda from "./pages/Agenda";
+import NovoEvento from "./pages/NovoEvento";
+import EditarEvento from "./pages/EditarEvento";
 import Financeiro from "./pages/Financeiro";
 import Configuracoes from "./pages/Configuracoes";
 import Perfil from "./pages/Perfil";
@@ -58,6 +60,8 @@ function App() {
           <Route path="/whatsapp" element={<WhatsApp />} />
           <Route element={<ModuleRoute moduleKey="AGENDA" />}>
             <Route path="/agenda" element={<Agenda />} />
+            <Route path="/novo-evento" element={<NovoEvento />} />
+            <Route path="/editarevento/:id" element={<EditarEvento />} />
           </Route>
           <Route path="/financeiro" element={<Financeiro />} />
           <Route path="/configuracoes" element={<Configuracoes />} />

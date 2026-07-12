@@ -109,7 +109,9 @@ Usa **`HashRouter`** (necessário para o GitHub Pages servir SPA estática).
 | `/editarlead/:id` | EditarLead | Painel |
 | `/insights` | Insights | Painel |
 | `/whatsapp` | WhatsApp | Painel |
-| `/agenda` | Agenda | Painel |
+| `/agenda` | Agenda | Painel (módulo `AGENDA`) |
+| `/novo-evento` | NovoEvento | Painel (módulo `AGENDA`) |
+| `/editarevento/:id` | EditarEvento | Painel (módulo `AGENDA`) |
 | `/financeiro` | Financeiro | Painel |
 | `/configuracoes` | Configuracoes | Painel |
 | `/perfil` | Perfil | Painel |
@@ -261,9 +263,11 @@ Plano evolutivo para transformar o protótipo atual em um produto SaaS comercial
 - [x] Super Admin habilita/desabilita módulos por tenant, com auditoria própria (`AdminAuditLog`).
 - [x] Motor de Automações protegido por `requireModule('AUTOMATION_ENGINE')`.
 
-### Fase 3 — Agendamento
-- [ ] Integração **Google Calendar** (criação/sincronização de consultas).
-- [ ] Tela de Agenda conectada ao backend e ao calendário.
+### Fase 3 — Agendamento (em andamento)
+- [x] Model `Appointment` (tenant-scoped, ligação opcional com `Lead`) + Repository→Service→Controller→Route.
+- [x] Tela de Agenda conectada ao backend real (`/agenda`, `/novo-evento`, `/editarevento/:id`), protegida pelo módulo `AGENDA`.
+- [x] Evento de domínio `appointment.created` emitido e compatível com o Motor de Automações.
+- [ ] Integração **Google Calendar** (criação/sincronização de consultas) — pendente de nova dependência (`googleapis`) e fluxo OAuth, a autorizar antes de iniciar.
 - [ ] Confirmações e lembretes automáticos via WhatsApp.
 
 ### Fase 4 — Monetização

@@ -59,6 +59,13 @@ enum IntegrationProvider {
   DENTAL_OFFICE
 }
 
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELED
+  COMPLETED
+}
+
 enum DayOfWeek {
   MON
   TUE
@@ -116,6 +123,7 @@ model Tenant {
   automationWebhooks AutomationWebhook[]
   automationDispatchLogs AutomationDispatchLog[]
   tenantModules     TenantModule[]
+  appointments      Appointment[]
 
   @@map("tenants")
 }
@@ -435,11 +443,40 @@ model Lead {
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   conversations Conversation[]
   messages      Message[]
+  appointments  Appointment[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, phoneNormalized])
   @@map("leads")
+}
+
+// Compromisso da Agenda (Fase 3 do roadmap). leadId é opcional — nem todo
+// evento tem um Lead já cadastrado no CRM (ex.: demonstração com prospect
+// novo); clientName cobre esse caso, e é preenchido a partir do Lead quando
+// leadId é informado. Preparado para sincronização futura com Google Calendar
+// (ver TenantIntegration/TenantScheduleConfig), sem acoplamento a ela ainda.
+model Appointment {
+  id          String            @id @default(uuid())
+  tenantId    String
+  leadId      String?
+  title       String
+  clientName  String?
+  description String?
+  location    String?
+  startAt     DateTime
+  endAt       DateTime
+  status      AppointmentStatus @default(SCHEDULED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead   Lead?  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, startAt])
+  @@map("appointments")
 }
 
 model Conversation {
