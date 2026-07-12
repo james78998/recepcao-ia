@@ -13,7 +13,8 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "admin:create": "node scripts/createAdminUser.js"
+    "admin:create": "node scripts/createAdminUser.js",
+    "modules:backfill": "node scripts/backfillModules.js"
   },
   "jest": {
     "testEnvironment": "node",

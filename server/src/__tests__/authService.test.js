@@ -4,6 +4,7 @@ jest.mock('../repositories/userRepository');
 jest.mock('../repositories/passwordResetTokenRepository');
 jest.mock('../services/tenantOnboardingService');
 jest.mock('../services/emailService');
+jest.mock('../services/tenantEntitlementService');
 jest.mock('../utils/domainEvents');
 
 const bcrypt = require('bcrypt');
@@ -11,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/userRepository');
 const passwordResetTokenRepository = require('../repositories/passwordResetTokenRepository');
 const emailService = require('../services/emailService');
+const tenantEntitlementService = require('../services/tenantEntitlementService');
 const domainEvents = require('../utils/domainEvents');
 const { login, me, updateMe, changePassword, forgotPassword, resetPassword } = require('../services/authService');
 
@@ -27,9 +29,10 @@ const USER_WITH_TENANT = {
 beforeEach(() => {
   jest.clearAllMocks();
   jwt.sign.mockReturnValue('token-fake');
+  tenantEntitlementService.getEnabledModuleKeys.mockResolvedValue(['CRM', 'WHATSAPP']);
 });
 
-describe('authService — formatUser inclui tenant.aiEnabled', () => {
+describe('authService — formatUser inclui tenant.aiEnabled e enabledModules', () => {
   it('login retorna tenant.aiEnabled real do banco', async () => {
     userRepository.findByEmailWithTenant.mockResolvedValue(USER_WITH_TENANT);
     bcrypt.compare.mockResolvedValue(true);
@@ -39,6 +42,16 @@ describe('authService — formatUser inclui tenant.aiEnabled', () => {
     expect(user.tenant.aiEnabled).toBe(false);
     expect(user.tenant.id).toBe('tenant-1');
     expect(user.tenant.name).toBe('Clínica Teste');
+  });
+
+  it('login retorna enabledModules a partir do tenantEntitlementService', async () => {
+    userRepository.findByEmailWithTenant.mockResolvedValue(USER_WITH_TENANT);
+    bcrypt.compare.mockResolvedValue(true);
+
+    const { user } = await login({ email: 'admin@teste.com', password: 'senha123' });
+
+    expect(tenantEntitlementService.getEnabledModuleKeys).toHaveBeenCalledWith('tenant-1');
+    expect(user.enabledModules).toEqual(['CRM', 'WHATSAPP']);
   });
 
   it('me() retorna tenant.aiEnabled real do banco', async () => {

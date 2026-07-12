@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
+import ModuleGate from "../components/ModuleGate";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
@@ -566,7 +567,9 @@ function Configuracoes() {
           onDisconnect={disconnectIntegration}
           notify={notify}
         />
-        <AutomationWebhooksSection />
+        <ModuleGate moduleKey="AUTOMATION_ENGINE">
+          <AutomationWebhooksSection />
+        </ModuleGate>
       </div>
     </Layout>
   );

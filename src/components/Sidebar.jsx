@@ -2,19 +2,19 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 function Sidebar({ active }) {
-  const { user } = useAuth();
+  const { user, hasModule } = useAuth();
   const companyName = user?.tenant?.name ?? 'Recepção IA';
 
   const menu = [
     { name: "Dashboard", path: "/dashboard", key: "dashboard" },
-    { name: "CRM", path: "/crm", key: "crm" },
-    { name: "IA Insights", path: "/insights", key: "insights" },
-    { name: "WhatsApp", path: "/whatsapp", key: "whatsapp" },
-    { name: "Agenda", path: "/agenda", key: "agenda" },
+    { name: "CRM", path: "/crm", key: "crm", moduleKey: "CRM" },
+    { name: "IA Insights", path: "/insights", key: "insights", moduleKey: "AI" },
+    { name: "WhatsApp", path: "/whatsapp", key: "whatsapp", moduleKey: "WHATSAPP" },
+    { name: "Agenda", path: "/agenda", key: "agenda", moduleKey: "AGENDA" },
     { name: "Configurações", path: "/configuracoes", key: "configuracoes" },
-    { name: "Financeiro", path: "/financeiro", key: "financeiro" },
+    { name: "Financeiro", path: "/financeiro", key: "financeiro", moduleKey: "FINANCEIRO" },
     { name: "Perfil", path: "/perfil", key: "perfil" },
-  ];
+  ].filter((item) => !item.moduleKey || hasModule(item.moduleKey));
 
   return (
     <aside className="w-72 bg-blue-950 text-white p-6 hidden md:block">

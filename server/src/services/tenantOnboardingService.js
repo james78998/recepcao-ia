@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const prisma = require('../repositories/prisma');
 const userRepository = require('../repositories/userRepository');
 const tenantRepository = require('../repositories/tenantRepository');
+const moduleRepository = require('../repositories/moduleRepository');
+const tenantModuleRepository = require('../repositories/tenantModuleRepository');
 
 const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
 
@@ -29,6 +31,12 @@ async function onboardTenant({ tenantName, tenantEmail, userName, userEmail, pas
 
   const createdUser = await prisma.$transaction(async (tx) => {
     const tenant = await tenantRepository.create({ name: tenantName, email: tenantEmail }, tx);
+    const catalog = await moduleRepository.findAll(tx);
+    await tenantModuleRepository.createManyEnabledForTenant(
+      tenant.id,
+      catalog.map((module) => module.id),
+      tx
+    );
     return userRepository.create(
       { tenantId: tenant.id, name: userName, email: userEmail, passwordHash, role: 'ADMIN' },
       tx

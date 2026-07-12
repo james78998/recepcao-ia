@@ -5,6 +5,7 @@ const userRepository = require('../repositories/userRepository');
 const passwordResetTokenRepository = require('../repositories/passwordResetTokenRepository');
 const tenantOnboardingService = require('./tenantOnboardingService');
 const emailService = require('./emailService');
+const tenantEntitlementService = require('./tenantEntitlementService');
 const domainEvents = require('../utils/domainEvents');
 const { AUTOMATION_EVENT_NAMES } = require('../constants/automation');
 
@@ -26,13 +27,15 @@ function generateTokens(user) {
   return { accessToken, refreshToken };
 }
 
-function formatUser(user) {
+async function formatUser(user) {
+  const enabledModules = await tenantEntitlementService.getEnabledModuleKeys(user.tenantId);
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     role: user.role,
     tenantId: user.tenantId,
+    enabledModules,
     tenant: {
       id: user.tenant.id,
       name: user.tenant.name,
@@ -51,7 +54,7 @@ async function register({ tenantName, tenantEmail, userName, userEmail, password
   });
 
   const { accessToken, refreshToken } = generateTokens(userWithTenant);
-  return { accessToken, refreshToken, user: formatUser(userWithTenant) };
+  return { accessToken, refreshToken, user: await formatUser(userWithTenant) };
 }
 
 async function login({ email, password }) {
@@ -65,7 +68,7 @@ async function login({ email, password }) {
   }
 
   const { accessToken, refreshToken } = generateTokens(user);
-  return { accessToken, refreshToken, user: formatUser(user) };
+  return { accessToken, refreshToken, user: await formatUser(user) };
 }
 
 async function refresh(refreshToken) {
@@ -91,7 +94,7 @@ async function refresh(refreshToken) {
     { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
   );
 
-  return { accessToken, user: formatUser(user) };
+  return { accessToken, user: await formatUser(user) };
 }
 
 async function me(userId) {
@@ -101,7 +104,7 @@ async function me(userId) {
     err.status = 404;
     throw err;
   }
-  return formatUser(user);
+  return await formatUser(user);
 }
 
 async function updateMe(userId, { name, email }) {

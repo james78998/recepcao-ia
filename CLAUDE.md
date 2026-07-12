@@ -234,25 +234,32 @@ npm run deploy     # Publica /dist no GitHub Pages (gh-pages)
 
 Plano evolutivo para transformar o protótipo atual em um produto SaaS comercial.
 
-### Fase 0 — Fundação Frontend ✅ (em andamento)
+### Fase 0 — Fundação Frontend ✅
 - [x] Landing page pública.
 - [x] Painel administrativo navegável (CRM, Agenda, Financeiro, Insights, WhatsApp).
 - [x] Camada `services/` com Axios pronta para integração.
-- [ ] Configurar **Vitest + React Testing Library** e primeiros testes.
-- [ ] Variáveis de ambiente no frontend (`.env`) para `baseURL` da API.
+- [x] Configurar **Vitest + React Testing Library** e primeiros testes.
+- [x] Variáveis de ambiente no frontend (`.env`) para `baseURL` da API.
 
-### Fase 1 — Backend & Autenticação
-- [ ] API Node.js + Express estruturada em camadas.
-- [ ] Prisma + PostgreSQL com modelo inicial e migrations.
-- [ ] Autenticação JWT (login, cadastro, recuperação de senha) — conectar páginas existentes.
-- [ ] Arquitetura **multi-tenant** com isolamento por `tenantId`.
-- [ ] Substituir mocks (`src/data/`) por dados reais via `services/`.
+### Fase 1 — Backend & Autenticação ✅
+- [x] API Node.js + Express estruturada em camadas.
+- [x] Prisma + PostgreSQL com modelo inicial e migrations.
+- [x] Autenticação JWT (login, cadastro, recuperação de senha) — conectar páginas existentes.
+- [x] Arquitetura **multi-tenant** com isolamento por `tenantId`.
+- [x] Substituir mocks (`src/data/`) por dados reais via `services/`.
 
-### Fase 2 — Núcleo de IA & Atendimento
-- [ ] Integração **OpenAI** (recepção virtual: respostas, qualificação, triagem).
-- [ ] Integração **WhatsApp Business Cloud API** (webhooks de entrada/saída).
-- [ ] Orquestração de fluxos com **n8n**.
-- [ ] Histórico de conversas persistido (`Conversation`, `Message`).
+### Fase 2 — Núcleo de IA & Atendimento (quase concluída)
+- [x] Integração **OpenAI** (recepção virtual: respostas, qualificação, triagem via rascunhos de mensagem).
+- [x] Integração **WhatsApp Business Cloud API** (webhooks de entrada/saída).
+- [ ] Orquestração de fluxos com **n8n** (hoje coberta parcialmente pelo Motor de Automações — webhooks de saída; orquestração de conversa em si ainda não implementada).
+- [x] Histórico de conversas persistido (`Conversation`, `Message`).
+
+### Fase 2.5 — Sistema de Módulos/Entitlements ✅
+- [x] `Module` (catálogo) e `TenantModule` (habilitação por tenant), com backfill idempotente.
+- [x] `tenantEntitlementService`, middleware `requireModule(moduleKey)` e `enabledModules` no payload de auth.
+- [x] `ModuleGate`/`ModuleRoute` no frontend + Sidebar filtrada por módulo.
+- [x] Super Admin habilita/desabilita módulos por tenant, com auditoria própria (`AdminAuditLog`).
+- [x] Motor de Automações protegido por `requireModule('AUTOMATION_ENGINE')`.
 
 ### Fase 3 — Agendamento
 - [ ] Integração **Google Calendar** (criação/sincronização de consultas).

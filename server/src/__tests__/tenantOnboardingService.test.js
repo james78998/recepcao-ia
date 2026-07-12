@@ -4,12 +4,18 @@ jest.mock('../repositories/prisma', () => ({
 }));
 jest.mock('../repositories/userRepository');
 jest.mock('../repositories/tenantRepository');
+jest.mock('../repositories/moduleRepository');
+jest.mock('../repositories/tenantModuleRepository');
 
 const bcrypt = require('bcrypt');
 const prisma = require('../repositories/prisma');
 const userRepository = require('../repositories/userRepository');
 const tenantRepository = require('../repositories/tenantRepository');
+const moduleRepository = require('../repositories/moduleRepository');
+const tenantModuleRepository = require('../repositories/tenantModuleRepository');
 const { onboardTenant } = require('../services/tenantOnboardingService');
+
+const CATALOG = [{ id: 'module-1' }, { id: 'module-2' }];
 
 const INPUT = {
   tenantName: 'Clínica Teste',
@@ -29,6 +35,8 @@ describe('tenantOnboardingService.onboardTenant', () => {
     userRepository.findByEmail.mockResolvedValue(null);
     bcrypt.hash.mockResolvedValue('hashed-password');
     tenantRepository.create.mockResolvedValue({ id: 'tenant-1' });
+    moduleRepository.findAll.mockResolvedValue(CATALOG);
+    tenantModuleRepository.createManyEnabledForTenant.mockResolvedValue({ count: 2 });
     userRepository.create.mockResolvedValue({ id: 'user-1' });
     userRepository.findByIdWithTenant.mockResolvedValue({
       id: 'user-1',
@@ -39,6 +47,11 @@ describe('tenantOnboardingService.onboardTenant', () => {
 
     expect(tenantRepository.create).toHaveBeenCalledWith(
       { name: INPUT.tenantName, email: INPUT.tenantEmail },
+      expect.anything()
+    );
+    expect(tenantModuleRepository.createManyEnabledForTenant).toHaveBeenCalledWith(
+      'tenant-1',
+      ['module-1', 'module-2'],
       expect.anything()
     );
     expect(userRepository.create).toHaveBeenCalledWith(

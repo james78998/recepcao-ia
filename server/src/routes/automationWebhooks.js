@@ -3,6 +3,7 @@ const { z } = require('zod');
 const validate = require('../middlewares/validate');
 const authMiddleware = require('../middlewares/auth');
 const requireRole = require('../middlewares/requireRole');
+const requireModule = require('../middlewares/requireModule');
 const automationWebhooksController = require('../controllers/automationWebhooksController');
 const { AUTOMATION_EVENTS } = require('../constants/automation');
 
@@ -19,7 +20,7 @@ const createAutomationWebhookSchema = z.object({
 
 const updateAutomationWebhookSchema = createAutomationWebhookSchema.partial();
 
-router.use(authMiddleware, requireRole('ADMIN'));
+router.use(authMiddleware, requireRole('ADMIN'), requireModule('AUTOMATION_ENGINE'));
 
 router.get('/', automationWebhooksController.list);
 // IMPORTANTE: /stats precisa vir antes de /:id, senão "stats" seria

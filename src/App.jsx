@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 
 import PrivateRoute from "./components/PrivateRoute";
 import PublicRoute from "./components/PublicRoute";
+import ModuleRoute from "./components/ModuleRoute";
 
 import Home from "./pages/Home";
 import RecuperarSenha from "./pages/RecuperarSenha";
@@ -55,7 +56,9 @@ function App() {
           <Route path="/editarlead/:id" element={<EditarLead />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/whatsapp" element={<WhatsApp />} />
-          <Route path="/agenda" element={<Agenda />} />
+          <Route element={<ModuleRoute moduleKey="AGENDA" />}>
+            <Route path="/agenda" element={<Agenda />} />
+          </Route>
           <Route path="/financeiro" element={<Financeiro />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="/perfil" element={<Perfil />} />

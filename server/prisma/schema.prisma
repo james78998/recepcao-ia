@@ -115,8 +115,48 @@ model Tenant {
   auditLogs         AuditLog[]
   automationWebhooks AutomationWebhook[]
   automationDispatchLogs AutomationDispatchLog[]
+  tenantModules     TenantModule[]
 
   @@map("tenants")
+}
+
+// Catálogo de módulos comerciais da plataforma (CRM, WhatsApp, IA, Agenda,
+// Motor de Automações etc.). Fonte da verdade em código: server/src/constants/modules.js
+// (seed/backfill via server/scripts/backfillModules.js). Dashboard, Configurações e
+// Perfil não são módulos — ficam sempre disponíveis, fora deste catálogo.
+model Module {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenantModules TenantModule[]
+
+  @@map("modules")
+}
+
+// Habilitação de um módulo para um tenant específico. Uma linha por par
+// (tenant, módulo); tenants novos recebem todas as linhas do catálogo já
+// habilitadas no onboarding (ver tenantOnboardingService), e tenants
+// existentes são cobertos pelo backfill (ver backfillModules.js).
+model TenantModule {
+  id       String  @id @default(uuid())
+  tenantId String
+  moduleId String
+  enabled  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, moduleId])
+  @@index([tenantId])
+  @@map("tenant_modules")
 }
 
 // Parâmetros de geração de IA por tenant. basePrompt (regras fixas do produto,
@@ -315,7 +355,31 @@ model AdminUser {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  auditLogs AdminAuditLog[]
+
   @@map("admin_users")
+}
+
+// Trilha de auditoria das ações do Super Admin (realm de AdminUser) — separada
+// de AuditLog, que audita ações de User dentro de um tenant. tenantId é
+// opcional porque nem toda ação administrativa é sobre um tenant específico
+// (reservado para futuras ações globais da plataforma).
+model AdminAuditLog {
+  id          String   @id @default(uuid())
+  adminUserId String
+  tenantId    String?
+  action      String // ex.: "MODULE_ENABLED", "MODULE_DISABLED", "MODULES_BULK_UPDATED"
+  resource    String // ex.: "TenantModule"
+  resourceId  String? // ex.: moduleKey ou TenantModule.id afetado
+  oldValue    Json?
+  newValue    Json?
+  createdAt   DateTime @default(now())
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@index([tenantId])
+  @@map("admin_audit_logs")
 }
 
 model User {

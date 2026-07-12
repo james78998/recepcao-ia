@@ -54,8 +54,13 @@ export function AuthProvider({ children }) {
     return updated;
   }, []);
 
+  const hasModule = useCallback(
+    (moduleKey) => user?.enabledModules?.includes(moduleKey) ?? false,
+    [user]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser, hasModule }}>
       {children}
     </AuthContext.Provider>
   );
