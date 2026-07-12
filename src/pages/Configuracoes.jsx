@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import PageTitle from "../components/PageTitle";
 import ModuleGate from "../components/ModuleGate";
@@ -13,6 +14,7 @@ import ApiKeyInput from "../components/configuracoes/ApiKeyInput";
 import IntegrationStatusBadge from "../components/configuracoes/IntegrationStatusBadge";
 import BusinessHoursEditor from "../components/configuracoes/BusinessHoursEditor";
 import IntegrationCard from "../components/configuracoes/IntegrationCard";
+import GoogleCalendarIntegrationCard from "../components/configuracoes/GoogleCalendarIntegrationCard";
 import AutomationWebhookCard from "../components/configuracoes/AutomationWebhookCard";
 import AutomationWebhookForm from "../components/configuracoes/AutomationWebhookForm";
 import AutomationSecretReveal from "../components/configuracoes/AutomationSecretReveal";
@@ -290,16 +292,9 @@ function IntegrationsSection({ integrations, savingSection, onConnect, onDisconn
 
   return (
     <div className="lg:col-span-2 grid md:grid-cols-2 gap-6">
-      <IntegrationCard
-        title="Google Calendar"
-        description="Sincronize agendamentos automaticamente."
+      <GoogleCalendarIntegrationCard
         integration={googleCalendar}
         saving={savingSection === "integration:GOOGLE_CALENDAR"}
-        fields={[
-          { name: "accessToken", placeholder: "Token de acesso OAuth" },
-          { name: "calendarId", placeholder: "Calendar ID" },
-        ]}
-        onConnect={(data) => handleConnect("GOOGLE_CALENDAR", data)}
         onDisconnect={() => handleDisconnect("GOOGLE_CALENDAR")}
       />
       <IntegrationCard
@@ -507,9 +502,12 @@ function Configuracoes() {
     updateBusinessHours,
     connectIntegration,
     disconnectIntegration,
+    reload,
   } = useTenantSettings();
 
   const [toast, setToast] = useState(null);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   function notify(result) {
     setToast(
@@ -519,6 +517,22 @@ function Configuracoes() {
     );
     setTimeout(() => setToast(null), 3000);
   }
+
+  // Retorno do fluxo OAuth do Google (ver GoogleCalendarIntegrationCard) —
+  // o backend redireciona de volta com ?google_calendar=connected|error.
+  useEffect(() => {
+    const googleCalendarResult = searchParams.get("google_calendar");
+    if (!googleCalendarResult) return;
+
+    if (googleCalendarResult === "connected") {
+      setToast({ type: "success", message: "Google Calendar conectado com sucesso!" });
+      reload();
+    } else {
+      setToast({ type: "error", message: "Não foi possível conectar ao Google Calendar." });
+    }
+    setTimeout(() => setToast(null), 3000);
+    navigate("/configuracoes", { replace: true });
+  }, [searchParams, reload, navigate]);
 
   if (loading) return <Loading text="Carregando configurações..." />;
 

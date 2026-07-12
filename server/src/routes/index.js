@@ -9,6 +9,7 @@ const adminTenantsRoutes  = require('./adminTenants');
 const tenantSettingsRoutes = require('./tenantSettings');
 const automationWebhooksRoutes = require('./automationWebhooks');
 const appointmentsRoutes = require('./appointments');
+const googleCalendarAuthRoutes = require('./googleCalendarAuth');
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/admin/tenants', adminTenantsRoutes);
 router.use('/tenants/me',    tenantSettingsRoutes);
 router.use('/tenants/me/automations/webhooks', automationWebhooksRoutes);
 router.use('/appointments', appointmentsRoutes);
+router.use('/auth/google', googleCalendarAuthRoutes);
 
 module.exports = router;

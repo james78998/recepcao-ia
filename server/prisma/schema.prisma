@@ -467,6 +467,7 @@ model Appointment {
   startAt     DateTime
   endAt       DateTime
   status      AppointmentStatus @default(SCHEDULED)
+  googleEventId String? // id do evento espelhado no Google Calendar (ver googleCalendarSyncService), null se não sincronizado
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,11 +1,13 @@
 jest.mock('../repositories/appointmentRepository');
 jest.mock('../repositories/leadRepository');
 jest.mock('../services/tenantScheduleConfigService');
+jest.mock('../services/googleCalendarSyncService');
 jest.mock('../utils/domainEvents');
 
 const appointmentRepository = require('../repositories/appointmentRepository');
 const leadRepository = require('../repositories/leadRepository');
 const tenantScheduleConfigService = require('../services/tenantScheduleConfigService');
+const googleCalendarSyncService = require('../services/googleCalendarSyncService');
 const domainEvents = require('../utils/domainEvents');
 const { list, getById, create, update, remove } = require('../services/appointmentService');
 
@@ -54,6 +56,7 @@ describe('appointmentService.create', () => {
     });
 
     expect(domainEvents.emit).toHaveBeenCalledWith('appointment.created', { tenantId: TENANT_ID, data: created });
+    expect(googleCalendarSyncService.syncCreate).toHaveBeenCalledWith(TENANT_ID, created);
     expect(result).toBe(created);
   });
 
@@ -136,6 +139,7 @@ describe('appointmentService.update', () => {
       startAt: EXISTING.startAt,
       endAt: EXISTING.endAt,
     });
+    expect(googleCalendarSyncService.syncUpdate).toHaveBeenCalledWith(TENANT_ID, { ...EXISTING, title: 'Novo título' });
   });
 
   it('valida o lead quando leadId é alterado', async () => {
@@ -167,10 +171,12 @@ describe('appointmentService.remove', () => {
   });
 
   it('remove o compromisso quando ele existe', async () => {
-    appointmentRepository.findById.mockResolvedValue({ id: APPOINTMENT_ID, tenantId: TENANT_ID });
+    const existing = { id: APPOINTMENT_ID, tenantId: TENANT_ID };
+    appointmentRepository.findById.mockResolvedValue(existing);
 
     await remove(APPOINTMENT_ID, TENANT_ID);
 
     expect(appointmentRepository.remove).toHaveBeenCalledWith(APPOINTMENT_ID);
+    expect(googleCalendarSyncService.syncDelete).toHaveBeenCalledWith(TENANT_ID, existing);
   });
 });

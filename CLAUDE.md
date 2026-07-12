@@ -263,11 +263,11 @@ Plano evolutivo para transformar o protótipo atual em um produto SaaS comercial
 - [x] Super Admin habilita/desabilita módulos por tenant, com auditoria própria (`AdminAuditLog`).
 - [x] Motor de Automações protegido por `requireModule('AUTOMATION_ENGINE')`.
 
-### Fase 3 — Agendamento (em andamento)
+### Fase 3 — Agendamento (quase concluída)
 - [x] Model `Appointment` (tenant-scoped, ligação opcional com `Lead`) + Repository→Service→Controller→Route.
 - [x] Tela de Agenda conectada ao backend real (`/agenda`, `/novo-evento`, `/editarevento/:id`), protegida pelo módulo `AGENDA`.
 - [x] Evento de domínio `appointment.created` emitido e compatível com o Motor de Automações.
-- [ ] Integração **Google Calendar** (criação/sincronização de consultas) — pendente de nova dependência (`googleapis`) e fluxo OAuth, a autorizar antes de iniciar.
+- [x] Integração **Google Calendar** (OAuth 2.0 real via `googleapis`, `integrations/google/`, sincronização automática de criação/atualização/exclusão de `Appointment`, protegida pelo módulo `GOOGLE_CALENDAR`, credenciais criptografadas em `TenantIntegration`). Requer `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` reais de um projeto no Google Cloud para funcionar de ponta a ponta (placeholders em dev).
 - [ ] Confirmações e lembretes automáticos via WhatsApp.
 
 ### Fase 4 — Monetização

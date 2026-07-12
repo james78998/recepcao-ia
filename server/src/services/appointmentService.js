@@ -1,6 +1,7 @@
 const appointmentRepository = require('../repositories/appointmentRepository');
 const leadRepository = require('../repositories/leadRepository');
 const tenantScheduleConfigService = require('./tenantScheduleConfigService');
+const googleCalendarSyncService = require('./googleCalendarSyncService');
 const domainEvents = require('../utils/domainEvents');
 const { AUTOMATION_EVENT_NAMES } = require('../constants/automation');
 const AppError = require('../utils/AppError');
@@ -52,6 +53,7 @@ async function create(tenantId, data) {
   });
 
   domainEvents.emit(AUTOMATION_EVENT_NAMES.APPOINTMENT_CREATED, { tenantId, data: appointment });
+  googleCalendarSyncService.syncCreate(tenantId, appointment); // fire-and-forget — nunca lança
   return appointment;
 }
 
@@ -63,12 +65,15 @@ async function update(id, tenantId, data) {
   const endAt = data.endAt ? new Date(data.endAt) : existing.endAt;
   assertValidRange(startAt, endAt);
 
-  return appointmentRepository.update(id, { ...data, startAt, endAt });
+  const appointment = await appointmentRepository.update(id, { ...data, startAt, endAt });
+  googleCalendarSyncService.syncUpdate(tenantId, appointment); // fire-and-forget — nunca lança
+  return appointment;
 }
 
 async function remove(id, tenantId) {
-  await getById(id, tenantId);
-  return appointmentRepository.remove(id);
+  const existing = await getById(id, tenantId);
+  await appointmentRepository.remove(id);
+  googleCalendarSyncService.syncDelete(tenantId, existing); // fire-and-forget — nunca lança
 }
 
 module.exports = { list, getById, create, update, remove };
